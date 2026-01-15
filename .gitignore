@@ -1,0 +1,13 @@
+# Claude Code session data
+.claude/
+
+# macOS system files
+.DS_Store
+
+# Temporary files
+*.tmp
+*~
+
+# Large data folders (too big for git - 23+ GB)
+Climate Compensation Data Folder/
+Spending simulations/
