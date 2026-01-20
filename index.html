@@ -71,12 +71,14 @@
         // Allocation logic matching Python simulation
         // Data format: [population, budget, ubi_needed, wtbi_needed, community, disaster, incomeGroup]
         // incomeGroup: 0=Low, 1=LowerMiddle, 2=UpperMiddle, 3=High
-        const allocateSpending = (yearData, ubiRateAdj, wtbiRateAdj) => {
+        const allocateSpending = (yearData, ubiRateAdj, wtbiRateAdj, communityAdj, disasterAdj) => {
             const [population, budget, ubiNeededBase, wtbiNeededBase, community, disaster, incomeGroup] = yearData;
 
             // Scale needed amounts by user rate adjustments
             const ubiNeeded = ubiNeededBase * ubiRateAdj;
             const wtbiNeeded = wtbiNeededBase * wtbiRateAdj;
+            const communityNeeded = community * communityAdj;
+            const disasterNeeded = disaster * disasterAdj;
 
             // DI eligibility: only Low and Lower Middle income
             const diEligible = incomeGroup <= 1;
@@ -85,24 +87,24 @@
 
             if (budget <= 0) {
                 // No budget, no spending
-            } else if (budget >= ubiNeeded + community) {
+            } else if (budget >= ubiNeeded + communityNeeded) {
                 // Branch 1: Can fund full UBI + community
                 ubiCost = ubiNeeded;
-                communityCost = community;
-                if (diEligible) disasterCost = disaster;
-            } else if (budget >= wtbiNeeded + community) {
+                communityCost = communityNeeded;
+                if (diEligible) disasterCost = disasterNeeded;
+            } else if (budget >= wtbiNeeded + communityNeeded) {
                 // Branch 2: Can fund WTBI + community
                 wtbiCost = wtbiNeeded;
-                communityCost = community;
-                if (diEligible) disasterCost = disaster;
+                communityCost = communityNeeded;
+                if (diEligible) disasterCost = disasterNeeded;
                 // Top up WTBI with leftover
-                const leftover = budget - (wtbiNeeded + community + (diEligible ? disaster : 0));
+                const leftover = budget - (wtbiNeeded + communityNeeded + (diEligible ? disasterNeeded : 0));
                 if (leftover > 0) wtbiCost += leftover;
             } else {
                 // Branch 3: Insufficient - split 95/5
                 wtbiCost = 0.95 * budget;
                 communityCost = 0.05 * budget;
-                if (diEligible) disasterCost = disaster;
+                if (diEligible) disasterCost = disasterNeeded;
             }
 
             return {
@@ -168,8 +170,32 @@
                                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
                             <p className="text-xs text-gray-500 mt-1">Weather-Triggered Basic Income daily rate (PPP $)</p>
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Community Grants Share (%)</label>
+                            <input type="number" value={inputs.communityShare === '' ? '' : inputs.communityShare}
+                                onChange={(e) => setInputs({...inputs, communityShare: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+                                onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, communityShare: 10}); }}
+                                min="0" max="100" step="1"
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
+                            <p className="text-xs text-gray-500 mt-1">Share of damages for community block grants</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Disaster Coverage Rate (%)</label>
+                            <input type="number" value={inputs.disasterRate === '' ? '' : inputs.disasterRate}
+                                onChange={(e) => setInputs({...inputs, disasterRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+                                onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, disasterRate: 0.8}); }}
+                                min="0" max="10" step="0.1"
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
+                            <p className="text-xs text-gray-500 mt-1">Share of global damages for disaster insurance</p>
+                        </div>
                     </div>
                 </div>
+
+                <button
+                    onClick={() => setInputs({ rcp: 'RCP 4.5', ssp: 'SSP 2', year: 2050, ubiRate: 3.0, wtbiRate: 4.2, communityShare: 10, disasterRate: 0.8 })}
+                    className="w-full mt-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-md transition-colors">
+                    Reset to Defaults
+                </button>
 
                 <div className="mt-8 pt-4 border-t border-gray-200">
                     <h3 className="text-sm font-semibold text-gray-600 mb-3">Current Settings</h3>
@@ -178,6 +204,8 @@
                         <p>Development: <span className="font-medium">{inputs.ssp}</span></p>
                         <p>UBI: <span className="font-medium">${inputs.ubiRate === '' ? 3.0 : inputs.ubiRate}/day</span></p>
                         <p>WTBI: <span className="font-medium">${inputs.wtbiRate === '' ? 4.2 : inputs.wtbiRate}/day</span></p>
+                        <p>Community: <span className="font-medium">{inputs.communityShare === '' ? 10 : inputs.communityShare}%</span></p>
+                        <p>Disaster: <span className="font-medium">{inputs.disasterRate === '' ? 0.8 : inputs.disasterRate}%</span></p>
                     </div>
                 </div>
             </div>
@@ -309,8 +337,12 @@
 
                 const userUbiRate = inputs.ubiRate === '' ? 3.0 : inputs.ubiRate;
                 const userWtbiRate = inputs.wtbiRate === '' ? 4.2 : inputs.wtbiRate;
+                const userCommunityShare = inputs.communityShare === '' ? 10 : inputs.communityShare;
+                const userDisasterRate = inputs.disasterRate === '' ? 0.8 : inputs.disasterRate;
                 const ubiRateAdj = userUbiRate / 3.0;
                 const wtbiRateAdj = userWtbiRate / 4.2;
+                const communityAdj = userCommunityShare / 10;
+                const disasterAdj = userDisasterRate / 0.8;
 
                 // Get all years from the data
                 const sampleYears = [2020, 2025, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2099];
@@ -323,7 +355,7 @@
                         const yearData = interpolateYear(rawData, year, iso);
                         if (!yearData) continue;
 
-                        const allocation = allocateSpending(yearData, ubiRateAdj, wtbiRateAdj);
+                        const allocation = allocateSpending(yearData, ubiRateAdj, wtbiRateAdj, communityAdj, disasterAdj);
                         totalBudget += allocation.budget;
                         totalSpending += allocation.totalSpending;
                     }
@@ -332,7 +364,7 @@
                 });
 
                 return yearlyData;
-            }, [rawData, inputs.ubiRate, inputs.wtbiRate]);
+            }, [rawData, inputs.ubiRate, inputs.wtbiRate, inputs.communityShare, inputs.disasterRate]);
 
             useEffect(() => {
                 if (!timeSeriesData || !chartRef.current) return;
@@ -420,7 +452,7 @@
             const [rawData, setRawData] = useState(null);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
-            const [inputs, setInputs] = useState({ rcp: 'RCP 4.5', ssp: 'SSP 2', year: 2050, ubiRate: 3.0, wtbiRate: 4.2 });
+            const [inputs, setInputs] = useState({ rcp: 'RCP 4.5', ssp: 'SSP 2', year: 2050, ubiRate: 3.0, wtbiRate: 4.2, communityShare: 10, disasterRate: 0.8 });
 
             useEffect(() => {
                 try {
@@ -437,8 +469,12 @@
                 // Default WTBI: $4.2/day (stored as $3.96 in 2019 USD = 4.2/1.0606)
                 const userUbiRate = inputs.ubiRate === '' ? 3.0 : inputs.ubiRate;
                 const userWtbiRate = inputs.wtbiRate === '' ? 4.2 : inputs.wtbiRate;
+                const userCommunityShare = inputs.communityShare === '' ? 10 : inputs.communityShare;
+                const userDisasterRate = inputs.disasterRate === '' ? 0.8 : inputs.disasterRate;
                 const ubiRateAdj = userUbiRate / 3.0;  // ratio vs default $3/day
                 const wtbiRateAdj = userWtbiRate / 4.2;  // ratio vs default $4.2/day
+                const communityAdj = userCommunityShare / 10;  // ratio vs default 10%
+                const disasterAdj = userDisasterRate / 0.8;  // ratio vs default 0.8%
 
                 const results = [];
                 for (const [iso, info] of Object.entries(rawData.c)) {
@@ -446,7 +482,7 @@
                     if (!yearData) continue;
 
                     // Run allocation algorithm
-                    const allocation = allocateSpending(yearData, ubiRateAdj, wtbiRateAdj);
+                    const allocation = allocateSpending(yearData, ubiRateAdj, wtbiRateAdj, communityAdj, disasterAdj);
 
                     results.push({
                         code: iso,
