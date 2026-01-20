@@ -72,6 +72,17 @@
         const DAMAGES_SCALE = ['#fef3c7', '#fcd34d', '#f59e0b', '#d97706', '#b45309', '#78350f'];
         const SPENDING_SCALE = ['#ede9fe', '#c4b5fd', '#8b5cf6', '#7c3aed', '#6d28d9', '#4c1d95'];
 
+        // Shortened display names for long country names
+        const SHORT_NAMES = {
+            'Russian Federation': 'Russia',
+            'United Kingdom of Great Britain and Northern Ireland': 'United Kingdom',
+            'Venezuela (Bolivarian Republic of)': 'Venezuela',
+            'Korea, Republic of': 'South Korea',
+            'Viet Nam': 'Vietnam',
+            'Moldova, Republic of': 'Moldova'
+        };
+        const shortenName = (name) => SHORT_NAMES[name] || name;
+
         const interpolateYear = (data, targetYear, iso) => {
             if (!data || !data.c || !data.c[iso]) return null;
             const countryData = data.c[iso];
@@ -755,7 +766,7 @@
 
                     results.push({
                         code: iso,
-                        name: info.n,
+                        name: shortenName(info.n),
                         population: allocation.population,
                         budget: allocation.budget,
                         totalSpending: allocation.totalSpending,
