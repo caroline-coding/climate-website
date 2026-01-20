@@ -120,7 +120,9 @@
             };
         };
 
-        const Sidebar = ({ inputs, setInputs }) => (
+        const Sidebar = ({ inputs, setInputs }) => {
+            const [showAdvanced, setShowAdvanced] = useState(false);
+            return (
             <div className="w-full md:w-80 bg-white shadow-lg p-4 md:p-6 md:h-screen overflow-y-auto border-b md:border-b-0 md:border-r border-gray-200">
                 <h2 className="text-lg font-semibold text-academic-dark mb-6 border-b pb-2">Model Parameters</h2>
                 <div className="space-y-6">
@@ -153,8 +155,15 @@
                     </div>
 
                     <div className="border-t pt-4">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4">Transfer Rates</h3>
-                        <div className="mb-4">
+                        <button
+                            onClick={() => setShowAdvanced(!showAdvanced)}
+                            className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 hover:text-academic-dark transition-colors">
+                            <span>Additional Parameters</span>
+                            <span className="text-lg">{showAdvanced ? '−' : '+'}</span>
+                        </button>
+                        {showAdvanced && (
+                        <div className="mt-4 space-y-4">
+                        <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">UBI Rate ($/day)</label>
                             <input type="number" value={inputs.ubiRate === '' ? '' : inputs.ubiRate}
                                 onChange={(e) => setInputs({...inputs, ubiRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
@@ -199,6 +208,8 @@
                             </label>
                             <p className="text-xs text-gray-500 mt-1 ml-6">When enabled, leftover budget increases WTBI payments</p>
                         </div>
+                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -221,7 +232,8 @@
                     </div>
                 </div>
             </div>
-        );
+            );
+        };
 
         const SpendingTable = ({ countryData }) => {
             const [sortField, setSortField] = useState('totalSpending');
