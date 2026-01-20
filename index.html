@@ -463,7 +463,7 @@
                     return (
                         <div>
                             <div className="font-semibold">{country.name}</div>
-                            <div>Damages/Capita: <span className="font-medium">${dpc.toFixed(2)}</span></div>
+                            <div>Damages/Capita: <span className="font-medium">${Math.round(dpc)}</span></div>
                             <div>Total Damages: {formatNum(country.budget)}</div>
                         </div>
                     );
@@ -472,12 +472,12 @@
                     return (
                         <div>
                             <div className="font-semibold">{country.name}</div>
-                            <div>Spending/Capita: <span className="font-medium">${(country.totalSpending/pop).toFixed(2)}</span></div>
+                            <div>Spending/Capita: <span className="font-medium">${Math.round(country.totalSpending/pop)}</span></div>
                             <div className="mt-1 text-xs">
-                                <div>UBI: ${(country.ubiSpending/pop).toFixed(2)}</div>
-                                <div>WTBI: ${(country.wtbiSpending/pop).toFixed(2)}</div>
-                                <div>Disaster: ${(country.disasterInsurance/pop).toFixed(2)}</div>
-                                <div>Community: ${(country.communityGrants/pop).toFixed(2)}</div>
+                                <div>UBI: ${Math.round(country.ubiSpending/pop)}</div>
+                                <div>WTBI: ${Math.round(country.wtbiSpending/pop)}</div>
+                                <div>Disaster: ${Math.round(country.disasterInsurance/pop)}</div>
+                                <div>Community: ${Math.round(country.communityGrants/pop)}</div>
                             </div>
                         </div>
                     );
