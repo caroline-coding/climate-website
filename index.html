@@ -302,8 +302,8 @@
 
             const formatB = (val) => {
                 if (val === 0) return '$0';
-                if (Math.abs(val) < 1e9) return `$${(val / 1e6).toFixed(1)}M`;
-                return `$${(val / 1e9).toFixed(2)}B`;
+                if (Math.abs(val) < 1e9) return `$${(val / 1e6).toFixed(0)}M`;
+                return `$${(val / 1e9).toFixed(1)}B`;
             };
 
             const formatPop = (val) => {
@@ -675,6 +675,10 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'nearest',
+                            intersect: false
+                        },
                         plugins: {
                             legend: {
                                 position: 'top',
