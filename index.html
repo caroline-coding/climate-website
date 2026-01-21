@@ -208,6 +208,7 @@
                             <input type="number" value={inputs.ubiRate === '' ? '' : inputs.ubiRate}
                                 onChange={(e) => setInputs({...inputs, ubiRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
                                 onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, ubiRate: 3.0}); }}
+                                onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
                                 min="0.5" max="20" step="0.1"
                                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
                             <p className="text-xs text-gray-500 mt-1">Universal Basic Income daily rate (PPP $)</p>
@@ -217,6 +218,7 @@
                             <input type="number" value={inputs.wtbiRate === '' ? '' : inputs.wtbiRate}
                                 onChange={(e) => setInputs({...inputs, wtbiRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
                                 onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, wtbiRate: 4.2}); }}
+                                onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
                                 min="0.5" max="20" step="0.1"
                                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
                             <p className="text-xs text-gray-500 mt-1">Weather-Triggered Basic Income daily rate (PPP $)</p>
@@ -226,6 +228,7 @@
                             <input type="number" value={inputs.communityShare === '' ? '' : inputs.communityShare}
                                 onChange={(e) => setInputs({...inputs, communityShare: e.target.value === '' ? '' : parseFloat(e.target.value)})}
                                 onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, communityShare: 10}); }}
+                                onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
                                 min="0" max="100" step="1"
                                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
                             <p className="text-xs text-gray-500 mt-1">Share of damages for community block grants</p>
@@ -235,6 +238,7 @@
                             <input type="number" value={inputs.disasterRate === '' ? '' : inputs.disasterRate}
                                 onChange={(e) => setInputs({...inputs, disasterRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
                                 onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, disasterRate: 0.8}); }}
+                                onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
                                 min="0" max="10" step="0.1"
                                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
                             <p className="text-xs text-gray-500 mt-1">Share of global damages for disaster insurance</p>
