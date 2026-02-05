@@ -33,7 +33,7 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
-        const DATA_YEARS = [2020, 2025, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2099];
+        const DATA_YEARS = Array.from({length: 80}, (_, i) => 2020 + i); // 2020-2099
 
         const RCP_MULTIPLIERS = {
             'RCP 4.5': 1.0
@@ -83,29 +83,12 @@
         };
         const shortenName = (name) => SHORT_NAMES[name] || name;
 
-        const interpolateYear = (data, targetYear, iso) => {
+        const getYearData = (data, targetYear, iso) => {
             if (!data || !data.c || !data.c[iso]) return null;
             const countryData = data.c[iso];
-            const years = DATA_YEARS;
-
-            if (targetYear <= years[0]) return countryData.y[years[0]];
-            if (targetYear >= years[years.length - 1]) return countryData.y[years[years.length - 1]];
-
-            let lowerYear = years[0], upperYear = years[years.length - 1];
-            for (let i = 0; i < years.length - 1; i++) {
-                if (targetYear >= years[i] && targetYear <= years[i + 1]) {
-                    lowerYear = years[i];
-                    upperYear = years[i + 1];
-                    break;
-                }
-            }
-
-            const lowerData = countryData.y[lowerYear];
-            const upperData = countryData.y[upperYear];
-            if (!lowerData || !upperData) return lowerData || upperData;
-
-            const t = (targetYear - lowerYear) / (upperYear - lowerYear);
-            return lowerData.map((v, i) => v + t * (upperData[i] - v));
+            // Direct lookup - we have data for every year 2020-2099
+            const year = Math.max(2020, Math.min(2099, targetYear));
+            return countryData.y[year] || null;
         };
 
         // Allocation logic matching Python simulation
@@ -628,7 +611,7 @@
                     let totalSpending = 0;
 
                     for (const [iso, info] of Object.entries(rawData.c)) {
-                        const yearData = interpolateYear(rawData, year, iso);
+                        const yearData = getYearData(rawData, year, iso);
                         if (!yearData) continue;
 
                         const allocation = allocateSpending(yearData, ubiRateAdj, wtbiRateAdj, communityAdj, disasterAdj, topUpWtbi);
@@ -766,7 +749,7 @@
 
                 const results = [];
                 for (const [iso, info] of Object.entries(rawData.c)) {
-                    const yearData = interpolateYear(rawData, inputs.year, iso);
+                    const yearData = getYearData(rawData, inputs.year, iso);
                     if (!yearData) continue;
 
                     // Run allocation algorithm
