@@ -12,6 +12,7 @@ and replaces its content with the generated JSON.
 
 import argparse
 import json
+import os
 import re
 import sys
 from collections import defaultdict
@@ -237,6 +238,194 @@ def count_q77(series):
     return counts
 
 
+def load_text_analysis(path):
+    """Load text analysis results (themes, counts, examples)."""
+    with open(path, "r") as f:
+        data = json.load(f)
+
+    result = {}
+    for side in ["support", "oppose"]:
+        side_data = data.get(side, {})
+        themes = side_data.get("themes", [])
+        counts = side_data.get("counts", {})
+        # Extract short English examples per theme
+        examples = {}
+        for theme_name, exs in side_data.get("examples", {}).items():
+            short_english = []
+            for ex in exs:
+                if ex.get("is_english") and len(ex["english"]) <= 200:
+                    short_english.append(ex["english"])
+                    if len(short_english) >= 3:
+                        break
+            examples[theme_name] = short_english
+        total = side_data.get("total", side_data.get("analyzed", 0))
+        result[side] = {"themes": themes, "counts": counts, "examples": examples, "total": total}
+
+    return result
+
+
+def load_classifications(path):
+    """Load per-response classifications from response_classifications.json."""
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def count_themes_from_classifications(series, classifications, theme_names):
+    """Count theme occurrences using pre-computed classifications.
+    Returns (theme_counts_list, other_count, n_classified)."""
+    counts = {name: 0 for name in theme_names}
+    counts["Other"] = 0
+    n_classified = 0
+
+    for text in series:
+        if pd.isna(text) or not str(text).strip() or len(str(text).strip()) <= 5:
+            continue
+        text_str = str(text).strip()
+        themes = classifications.get(text_str, None)
+        if themes is None:
+            continue
+        n_classified += 1
+        for theme in themes:
+            if theme in counts:
+                counts[theme] += 1
+            else:
+                counts["Other"] += 1
+
+    return [counts[name] for name in theme_names], counts["Other"], n_classified
+
+
+def collect_examples_for_group(responses, classifications, theme_names, max_per_theme=3):
+    """Collect example responses for all themes from a group's responses."""
+    collected = {t: [] for t in theme_names}
+    full_themes = set()
+
+    for text in responses:
+        if len(full_themes) == len(theme_names):
+            break
+        if pd.isna(text):
+            continue
+        text_str = str(text).strip()
+        if len(text_str) <= 10 or len(text_str) > 300:
+            continue
+        themes = classifications.get(text_str)
+        if not themes:
+            continue
+        for t in themes:
+            if t not in collected or t in full_themes:
+                continue
+            collected[t].append(text_str)
+            if len(collected[t]) >= max_per_theme:
+                full_themes.add(t)
+
+    result = {}
+    for t in theme_names:
+        result[t] = [{"text": txt} for txt in collected[t][:max_per_theme]]
+
+    return result
+
+
+def collect_group_examples(data, support_cls, oppose_cls, support_names, oppose_names):
+    """Collect per-group example quotes for each theme."""
+    groups = {}
+
+    group_subsets = [
+        ("All", data),
+        ("OECD", data[data["is_oecd"] == "True"]),
+        ("LMIC", data[data["is_lmic"] == "True"]),
+    ]
+    counts = data["Country"].value_counts()
+    for country_name, n in counts.items():
+        if n >= MIN_COUNTRY_N:
+            short = COUNTRY_SHORT.get(country_name, country_name)
+            group_subsets.append((short, data[data["Country"] == country_name]))
+
+    for group_name, subset in group_subsets:
+        support_ex = collect_examples_for_group(
+            subset["Q7.1.1"], support_cls, support_names
+        )
+        oppose_ex = collect_examples_for_group(
+            subset["Q7.1.2"], oppose_cls, oppose_names
+        )
+        groups[group_name] = {"support": support_ex, "oppose": oppose_ex}
+        n_total = sum(len(v) for v in support_ex.values()) + sum(len(v) for v in oppose_ex.values())
+        print(f"  {group_name}: {n_total} examples")
+
+    return groups
+
+
+def detect_and_translate_examples(group_examples, api_key):
+    """Detect language and translate non-English examples using Claude API."""
+    try:
+        import anthropic
+    except ImportError:
+        print("Warning: anthropic package not installed, skipping translation")
+        return
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    # Collect all unique texts across all groups
+    all_texts = set()
+    for sides in group_examples.values():
+        for themes in sides.values():
+            for examples in themes.values():
+                for ex in examples:
+                    all_texts.add(ex["text"])
+
+    if not all_texts:
+        return
+
+    texts_list = list(all_texts)
+    print(f"  Detecting language and translating {len(texts_list)} unique examples...")
+    # Maps original text -> {"is_english": bool, "translation": str or None}
+    results = {}
+
+    for i in range(0, len(texts_list), 20):
+        batch = texts_list[i : i + 20]
+        prompt = (
+            "For each survey response below, detect whether it is in English. "
+            "If it is NOT English, provide an English translation.\n\n"
+            "Return ONLY a JSON array in this exact format:\n"
+            '[{"is_english": true}, {"is_english": false, "translation": "English translation here"}, ...]\n\n'
+            + "\n".join(f"{j+1}. {t}" for j, t in enumerate(batch))
+        )
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=4000,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            text = response.content[0].text.strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            parsed = json.loads(text.strip())
+            for j, orig in enumerate(batch):
+                if j < len(parsed):
+                    results[orig] = parsed[j]
+        except Exception as e:
+            print(f"    Batch error: {e}")
+        print(f"    Processed {min(i + 20, len(texts_list))}/{len(texts_list)}")
+
+    # Apply results to all examples
+    n_translated = 0
+    for sides in group_examples.values():
+        for themes in sides.values():
+            for examples in themes.values():
+                for ex in examples:
+                    info = results.get(ex["text"])
+                    if info:
+                        ex["is_english"] = info.get("is_english", True)
+                        if not ex["is_english"] and "translation" in info:
+                            ex["translation"] = info["translation"]
+                            n_translated += 1
+                    else:
+                        ex["is_english"] = True  # default fallback
+
+    n_non_english = sum(1 for r in results.values() if not r.get("is_english", True))
+    print(f"  Found {n_non_english} non-English texts, translated {n_translated}")
+
+
 def mean_q78(subset):
     """Compute mean allocation percentages for Q7.8 fields."""
     # Only include respondents who answered Q7.7
@@ -252,7 +441,8 @@ def mean_q78(subset):
     return means, int(len(has_q77))
 
 
-def aggregate_cell(subset):
+def aggregate_cell(subset, support_classifications=None, oppose_classifications=None,
+                    support_theme_names=None, oppose_theme_names=None):
     """Aggregate all questions for a subset of data. Returns a cell dict."""
     n = len(subset)
     if n == 0:
@@ -289,10 +479,21 @@ def aggregate_cell(subset):
     # Q7.8 - allocation percentages
     cell["q78"], cell["n_q78"] = mean_q78(subset)
 
+    # Open-ended response themes (if classifications available)
+    if support_classifications is not None and support_theme_names is not None:
+        cell["st"], cell["so"], cell["ns"] = count_themes_from_classifications(
+            subset["Q7.1.1"], support_classifications, support_theme_names
+        )
+    if oppose_classifications is not None and oppose_theme_names is not None:
+        cell["ot"], cell["oo"], cell["no_"] = count_themes_from_classifications(
+            subset["Q7.1.2"], oppose_classifications, oppose_theme_names
+        )
+
     return cell
 
 
-def build_cells(data, countries):
+def build_cells(data, countries, support_classifications=None, oppose_classifications=None,
+                support_theme_names=None, oppose_theme_names=None):
     """Build all aggregation cells for every (group, age, education) combination."""
     cells = {}
 
@@ -302,10 +503,14 @@ def build_cells(data, countries):
     data = data.copy()
     data["edu_short"] = data["Education"].map(edu_map).fillna("")
 
+    def agg(subset):
+        return aggregate_cell(subset, support_classifications, oppose_classifications,
+                              support_theme_names, oppose_theme_names)
+
     def add_cells(key_prefix, subset):
         """Add cells for a given group/country across all age and education combinations."""
         # All ages, all education
-        cell = aggregate_cell(subset)
+        cell = agg(subset)
         if cell:
             cells[f"{key_prefix}|All|All"] = cell
 
@@ -313,14 +518,14 @@ def build_cells(data, countries):
         for age_full in AGE_GROUPS:
             age_short = AGE_SHORT[age_full]
             age_subset = subset[subset["Age"] == age_full]
-            cell = aggregate_cell(age_subset)
+            cell = agg(age_subset)
             if cell and cell["n"] >= 5:
                 cells[f"{key_prefix}|{age_short}|All"] = cell
 
         # Each education group (all ages)
         for edu_short in EDU_SHORT_ORDER:
             edu_subset = subset[subset["edu_short"] == edu_short]
-            cell = aggregate_cell(edu_subset)
+            cell = agg(edu_subset)
             if cell and cell["n"] >= 5:
                 cells[f"{key_prefix}|All|{edu_short}"] = cell
 
@@ -330,7 +535,7 @@ def build_cells(data, countries):
             age_subset = subset[subset["Age"] == age_full]
             for edu_short in EDU_SHORT_ORDER:
                 combo_subset = age_subset[age_subset["edu_short"] == edu_short]
-                cell = aggregate_cell(combo_subset)
+                cell = agg(combo_subset)
                 if cell and cell["n"] >= 5:
                     cells[f"{key_prefix}|{age_short}|{edu_short}"] = cell
 
@@ -359,7 +564,7 @@ def build_cells(data, countries):
     return cells
 
 
-def build_json(data, countries, cells):
+def build_json(data, countries, cells, text_analysis=None, group_examples=None):
     """Construct the final JSON structure."""
     output = {
         "meta": {
@@ -375,6 +580,26 @@ def build_json(data, countries, cells):
         },
         "cells": cells,
     }
+
+    # Add open-ended theme metadata if available
+    if text_analysis:
+        for side in ["support", "oppose"]:
+            side_data = text_analysis.get(side, {})
+            themes = side_data.get("themes", [])
+            theme_names = [t["name"] for t in themes]
+            counts = side_data.get("counts", {})
+            output["meta"][f"{side}_themes"] = [
+                {"name": t["name"], "description": t["description"]}
+                for t in themes
+            ]
+            # Global counts in theme order (for fallback display)
+            output["meta"][f"{side}_counts"] = [counts.get(name, 0) for name in theme_names]
+            output["meta"][f"{side}_other"] = counts.get("Other", 0)
+            output["meta"][f"{side}_total"] = side_data.get("total", 0)
+
+    if group_examples:
+        output["meta"]["group_examples"] = group_examples
+
     return output
 
 
@@ -404,6 +629,14 @@ def main():
     parser.add_argument("csv_path", help="Path to the survey CSV file")
     parser.add_argument("--embed", metavar="HTML_PATH", help="Embed JSON into the specified HTML file")
     parser.add_argument("--output", metavar="JSON_PATH", help="Write JSON to a file (optional)")
+    parser.add_argument("--text-analysis", metavar="JSON_PATH",
+                        help="Path to text_analysis_results.json (theme definitions and examples)")
+    parser.add_argument("--classifications", metavar="JSON_PATH",
+                        help="Path to response_classifications.json (per-response theme assignments)")
+    parser.add_argument("--translate", action="store_true",
+                        help="Translate non-English example quotes via Claude API")
+    parser.add_argument("--api-key", metavar="KEY",
+                        help="Anthropic API key for translation (or set ANTHROPIC_API_KEY env var)")
     args = parser.parse_args()
 
     # Load and filter data
@@ -415,13 +648,55 @@ def main():
     for c in countries:
         print(f"  {c['id']}: n={c['n']} ({c['group']})")
 
+    # Load text analysis and classifications if provided
+    text_analysis = None
+    support_classifications = None
+    oppose_classifications = None
+    support_theme_names = None
+    oppose_theme_names = None
+
+    if args.text_analysis:
+        print(f"\nLoading text analysis from {args.text_analysis}")
+        text_analysis = load_text_analysis(args.text_analysis)
+
+    if args.classifications:
+        print(f"Loading per-response classifications from {args.classifications}")
+        raw_classifications = load_classifications(args.classifications)
+        support_classifications = raw_classifications.get("support", {})
+        oppose_classifications = raw_classifications.get("oppose", {})
+        print(f"  Support classifications: {len(support_classifications)}")
+        print(f"  Oppose classifications: {len(oppose_classifications)}")
+
+        # Get theme names from text analysis (in order)
+        if text_analysis:
+            support_theme_names = [t["name"] for t in text_analysis["support"]["themes"]]
+            oppose_theme_names = [t["name"] for t in text_analysis["oppose"]["themes"]]
+
     # Build aggregation cells
     print()
-    cells = build_cells(data, countries)
+    cells = build_cells(data, countries, support_classifications, oppose_classifications,
+                        support_theme_names, oppose_theme_names)
     print(f"\nTotal cells: {len(cells)}")
 
+    # Collect per-group example quotes
+    group_examples = None
+    if support_classifications and oppose_classifications and support_theme_names and oppose_theme_names:
+        print("\nCollecting per-group example quotes...")
+        group_examples = collect_group_examples(
+            data, support_classifications, oppose_classifications,
+            support_theme_names, oppose_theme_names
+        )
+
+        if args.translate:
+            api_key = args.api_key or os.environ.get("ANTHROPIC_API_KEY")
+            if api_key:
+                print("\nDetecting languages and translating...")
+                detect_and_translate_examples(group_examples, api_key)
+            else:
+                print("Warning: --translate specified but no API key provided (use --api-key or ANTHROPIC_API_KEY)")
+
     # Build final JSON
-    output = build_json(data, countries, cells)
+    output = build_json(data, countries, cells, text_analysis, group_examples)
     json_str = json.dumps(output, separators=(",", ":"))
     print(f"JSON size: {len(json_str):,} bytes ({len(json_str) / 1024:.1f} KB)")
 
