@@ -751,7 +751,7 @@
 
         const TopNav = ({ activeView, setActiveView }) => (
             <div className="bg-academic-dark text-white px-4 md:px-6 py-2.5 flex items-center gap-4 md:gap-6">
-                <span className="font-semibold academic-font text-base md:text-lg whitespace-nowrap">Climate Compensation</span>
+                <span onClick={() => setActiveView('landing')} className="font-semibold academic-font text-base md:text-lg whitespace-nowrap cursor-pointer hover:text-white/80">Climate Compensation</span>
                 <div className="flex gap-1">
                     {[
                         { id: 'simulation', label: 'Simulation' },
@@ -1173,8 +1173,41 @@
             );
         };
 
+        const PROPOSAL_URL = 'https://fairclimate.earth/wp-content/uploads/2025/11/Climate-proposal_A-grand-bargain-for-climate-mitigation_-adaptation-and-compensation-_Esther-Duflo_11.19.25.pdf';
+
+        const LandingPage = ({ setActiveView }) => (
+            <div className="bg-gray-50 flex flex-col items-center justify-center px-4 py-12" style={{minHeight: 'calc(100vh - 44px)'}}>
+                <div className="max-w-3xl text-center mb-12">
+                    <h1 className="text-4xl md:text-5xl font-bold text-academic-dark academic-font mb-4">The FAIR Proposal</h1>
+                    <p className="text-lg text-gray-600 leading-relaxed">
+                        A grand bargain for climate mitigation, adaptation, and compensation &mdash; a proposal by Abhijit Banerjee, Esther Duflo, and Michael Greenstone.
+                    </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
+                    <a href={PROPOSAL_URL} target="_blank" rel="noopener noreferrer"
+                       className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 flex flex-col items-center text-center group">
+                        <h2 className="text-lg font-bold text-academic-dark mb-2">Read the Proposal</h2>
+                        <p className="text-sm text-gray-500 mb-4 flex-1">Read the full climate compensation proposal (PDF).</p>
+                        <span className="text-sm font-medium text-academic-medium group-hover:underline">Open PDF &rarr;</span>
+                    </a>
+                    <button onClick={() => setActiveView('simulation')}
+                            className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 flex flex-col items-center text-center group">
+                        <h2 className="text-lg font-bold text-academic-dark mb-2">Explore the Simulation</h2>
+                        <p className="text-sm text-gray-500 mb-4 flex-1">Interactive simulator showing projected spending across countries and scenarios.</p>
+                        <span className="text-sm font-medium text-academic-medium group-hover:underline">Launch Simulator &rarr;</span>
+                    </button>
+                    <button onClick={() => setActiveView('survey')}
+                            className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 flex flex-col items-center text-center group">
+                        <h2 className="text-lg font-bold text-academic-dark mb-2">View Survey Results</h2>
+                        <p className="text-sm text-gray-500 mb-4 flex-1">Results from a survey of 14,000+ respondents across 18 countries on climate compensation.</p>
+                        <span className="text-sm font-medium text-academic-medium group-hover:underline">View Results &rarr;</span>
+                    </button>
+                </div>
+            </div>
+        );
+
         const App = () => {
-            const [activeView, setActiveView] = useState('simulation');
+            const [activeView, setActiveView] = useState('landing');
             const [rawData, setRawData] = useState(null);
             const [worldPaths, setWorldPaths] = useState(null);
             const [surveyData, setSurveyData] = useState(null);
@@ -1248,7 +1281,9 @@
             return (
                 <div className="min-h-screen">
                     <TopNav activeView={activeView} setActiveView={setActiveView} />
-                    {activeView === 'simulation' ? (
+                    {activeView === 'landing' ? (
+                        <LandingPage setActiveView={setActiveView} />
+                    ) : activeView === 'simulation' ? (
                         <div className="flex flex-col md:flex-row" style={{minHeight: 'calc(100vh - 44px)'}}>
                             <Sidebar inputs={inputs} setInputs={setInputs} />
                             <div className="flex-1 p-3 md:p-6 overflow-y-auto bg-gray-100">
