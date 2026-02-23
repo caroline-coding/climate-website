@@ -11,17 +11,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', Helvetica, Arial, sans-serif; }
-        .academic-font { font-family: 'Inter', Helvetica, Arial, sans-serif; }
+        body { font-family: 'DM Sans', Helvetica, Arial, sans-serif; }
+        .academic-font { font-family: 'DM Sans', Helvetica, Arial, sans-serif; }
     </style>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        academic: { dark: '#333333', medium: '#2ea3f2', light: '#f7f9fc' }
+                        academic: { dark: '#111111', medium: '#333333', light: '#f5f5f5' }
                     }
                 }
             }
@@ -666,8 +666,8 @@
                             {
                                 label: 'Total Budget',
                                 data: timeSeriesData.map(d => d.budget),
-                                borderColor: '#2ea3f2',
-                                backgroundColor: 'rgba(46, 163, 242, 0.1)',
+                                borderColor: '#111111',
+                                backgroundColor: 'rgba(17, 17, 17, 0.08)',
                                 borderWidth: 2,
                                 fill: false,
                                 tension: 0.3
@@ -739,22 +739,22 @@
         // ========== Survey Results Components ==========
 
         const SURVEY_COLORS = {
-            primary: '#333333',
-            secondary: '#2ea3f2',
-            accent: '#2ea3f2',
+            primary: '#111111',
+            secondary: '#333333',
+            accent: '#111111',
             green: '#22c55e',
             red: '#ef4444',
             amber: '#f59e0b',
             purple: '#8b5cf6',
             gray: '#6b7280',
-            lightBg: '#f7f9fc',
+            lightBg: '#f5f5f5',
             // Likert diverging scale
             likert: ['#166534', '#22c55e', '#9ca3af', '#f97316', '#dc2626'],
         };
 
         const TopNav = ({ activeView, setActiveView }) => (
-            <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-2.5 flex items-center gap-4 md:gap-6 shadow-sm">
-                <span onClick={() => setActiveView('landing')} className="font-semibold academic-font text-base md:text-lg whitespace-nowrap cursor-pointer text-gray-800 hover:text-academic-medium">The FAIR Proposal</span>
+            <div className="bg-white border-b border-gray-200 px-6 md:px-10 py-3 flex items-center justify-between">
+                <span onClick={() => setActiveView('landing')} className="font-bold academic-font text-base md:text-lg tracking-tight cursor-pointer text-black hover:opacity-60 transition-opacity">FAIR</span>
                 <div className="flex gap-1">
                     {[
                         { id: 'simulation', label: 'Simulation' },
@@ -764,8 +764,8 @@
                             onClick={() => setActiveView(tab.id)}
                             className={`px-3 md:px-4 py-1.5 rounded text-sm font-medium transition-colors ${
                                 activeView === tab.id
-                                    ? 'bg-academic-medium/10 text-academic-medium'
-                                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                                    ? 'bg-black text-white'
+                                    : 'text-gray-500 hover:text-black'
                             }`}>
                             {tab.label}
                         </button>
@@ -1151,8 +1151,8 @@
             return (
                 <div className="max-w-6xl mx-auto p-4 md:p-6 bg-gray-100" style={{minHeight: 'calc(100vh - 44px)'}}>
                     <div className="mb-6">
-                        <h1 className="text-xl md:text-3xl font-bold text-academic-dark academic-font">Global Survey Results</h1>
-                        <p className="text-gray-600 mt-1">
+                        <h1 className="text-2xl md:text-4xl font-bold text-black tracking-tight academic-font">Global Survey Results</h1>
+                        <p className="text-gray-500 mt-2">
                             Survey of {meta.total_n.toLocaleString()} respondents across {meta.countries.length} countries
                         </p>
                     </div>
@@ -1179,142 +1179,137 @@
         const PROPOSAL_URL = 'https://fairclimate.earth/wp-content/uploads/2025/11/Climate-proposal_A-grand-bargain-for-climate-mitigation_-adaptation-and-compensation-_Esther-Duflo_11.19.25.pdf';
 
         const LandingPage = ({ setActiveView }) => (
-            <div className="bg-gray-50 flex flex-col items-center justify-center px-4 py-12" style={{minHeight: 'calc(100vh - 44px)'}}>
-                <div className="max-w-3xl text-center mb-10">
-                    <h1 className="text-4xl md:text-5xl font-bold text-academic-dark academic-font mb-4">The FAIR Proposal</h1>
-                    <p className="text-lg text-gray-600 leading-relaxed">
+            <div>
+                {/* Hero — dark, bold, editorial */}
+                <div className="bg-black text-white px-6 md:px-10 py-24 md:py-36 text-center" style={{minHeight: '70vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+                    <h1 className="text-5xl md:text-7xl font-bold academic-font tracking-tight leading-tight mb-6 max-w-4xl">Those who emit, compensate.</h1>
+                    <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-2xl mb-10">
                         A grand bargain for climate mitigation, adaptation, and compensation &mdash; a proposal by Abhijit Banerjee, Esther Duflo, and Michael Greenstone.
                     </p>
+                    <a href={PROPOSAL_URL} target="_blank" rel="noopener noreferrer"
+                       className="inline-block border-2 border-white text-white px-8 py-3 text-sm font-semibold tracking-widest uppercase hover:bg-white hover:text-black transition-colors">
+                        + Read the Proposal
+                    </a>
                 </div>
 
-                {/* Infographic */}
-                <div className="max-w-4xl w-full mb-10">
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        {/* Header */}
-                        <div className="border-t-4 border-academic-medium px-6 py-4 text-center">
-                            <h2 className="text-xl md:text-2xl font-bold academic-font text-academic-dark">How FAIR Works: A Grand Bargain</h2>
-                        </div>
+                {/* The Grand Bargain — white section */}
+                <div className="bg-white px-6 md:px-10 py-20 md:py-28">
+                    <div className="max-w-5xl mx-auto">
+                        <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">The Grand Bargain</h2>
+                        <p className="text-gray-500 text-lg md:text-xl mb-16 max-w-3xl leading-relaxed">A framework where wealthy nations compensate developing countries for climate damages, and developing countries commit to verifiable emissions reductions.</p>
 
-                        {/* The Two Sides */}
-                        <div className="grid grid-cols-1 md:grid-cols-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
                             {/* Wealthy Countries */}
-                            <div className="p-5 md:p-6 border-b md:border-b-0 md:border-r border-gray-200">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                                    </div>
-                                    <h3 className="text-lg font-bold text-academic-dark">Wealthy Countries</h3>
-                                </div>
-                                <p className="text-sm text-gray-500 mb-3 italic">Responsible for the majority of historical emissions</p>
-                                <ul className="space-y-2.5">
-                                    <li className="flex items-start gap-2">
-                                        <span className="text-green-600 font-bold mt-0.5 flex-shrink-0">&#10003;</span>
-                                        <span className="text-sm text-gray-700"><strong>Pay compensation</strong> to developing countries for climate damages caused by their greenhouse gas emissions</span>
+                            <div>
+                                <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-3">Wealthy Countries</p>
+                                <h3 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">Pay for the damage.</h3>
+                                <p className="text-gray-500 mb-6 leading-relaxed">Responsible for the majority of historical emissions, wealthy nations fund compensation proportional to the climate damages they cause.</p>
+                                <ul className="space-y-4">
+                                    <li className="flex items-start gap-3">
+                                        <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">1</span>
+                                        <span className="text-gray-700"><strong>Pay compensation</strong> to developing countries for climate damages caused by their greenhouse gas emissions</span>
                                     </li>
-                                    <li className="flex items-start gap-2">
-                                        <span className="text-green-600 font-bold mt-0.5 flex-shrink-0">&#10003;</span>
-                                        <span className="text-sm text-gray-700"><strong>Fund through</strong> carbon taxes, wealth taxes, corporate taxes, or general revenue</span>
+                                    <li className="flex items-start gap-3">
+                                        <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">2</span>
+                                        <span className="text-gray-700"><strong>Fund through</strong> carbon taxes, wealth taxes, corporate taxes, or general revenue</span>
                                     </li>
-                                    <li className="flex items-start gap-2">
-                                        <span className="text-green-600 font-bold mt-0.5 flex-shrink-0">&#10003;</span>
-                                        <span className="text-sm text-gray-700"><strong>Continue reducing</strong> their own emissions alongside compensation</span>
+                                    <li className="flex items-start gap-3">
+                                        <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">3</span>
+                                        <span className="text-gray-700"><strong>Continue reducing</strong> their own emissions alongside compensation</span>
                                     </li>
                                 </ul>
                             </div>
 
                             {/* Developing Countries */}
-                            <div className="p-5 md:p-6">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#166534" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c4-4 8-7.5 8-12a8 8 0 1 0-16 0c0 4.5 4 8 8 12z"/><circle cx="12" cy="10" r="3"/></svg>
-                                    </div>
-                                    <h3 className="text-lg font-bold text-academic-dark">Developing Countries</h3>
-                                </div>
-                                <p className="text-sm text-gray-500 mb-3 italic">Bear the greatest burden of climate damages</p>
-                                <ul className="space-y-2.5">
-                                    <li className="flex items-start gap-2">
-                                        <span className="text-green-600 font-bold mt-0.5 flex-shrink-0">&#10003;</span>
-                                        <span className="text-sm text-gray-700"><strong>Implement a carbon tax</strong> to verifiably cut their own emissions</span>
+                            <div>
+                                <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-3">Developing Countries</p>
+                                <h3 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">Cut emissions, receive support.</h3>
+                                <p className="text-gray-500 mb-6 leading-relaxed">Bearing the greatest burden of climate damages, developing nations commit to verified emissions reductions in exchange for compensation.</p>
+                                <ul className="space-y-4">
+                                    <li className="flex items-start gap-3">
+                                        <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">1</span>
+                                        <span className="text-gray-700"><strong>Implement a carbon tax</strong> to verifiably cut their own emissions</span>
                                     </li>
-                                    <li className="flex items-start gap-2">
-                                        <span className="text-green-600 font-bold mt-0.5 flex-shrink-0">&#10003;</span>
-                                        <span className="text-sm text-gray-700"><strong>Receive compensation</strong> funds proportional to the climate damages they suffer</span>
+                                    <li className="flex items-start gap-3">
+                                        <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">2</span>
+                                        <span className="text-gray-700"><strong>Receive compensation</strong> funds proportional to the climate damages they suffer</span>
                                     </li>
-                                    <li className="flex items-start gap-2">
-                                        <span className="text-green-600 font-bold mt-0.5 flex-shrink-0">&#10003;</span>
-                                        <span className="text-sm text-gray-700"><strong>Use funds transparently</strong> for programs that directly benefit their citizens</span>
+                                    <li className="flex items-start gap-3">
+                                        <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">3</span>
+                                        <span className="text-gray-700"><strong>Use funds transparently</strong> for programs that directly benefit their citizens</span>
                                     </li>
                                 </ul>
-                            </div>
-                        </div>
-
-                        {/* Arrow / connector */}
-                        <div className="bg-gray-50 px-6 py-3 text-center border-t border-b border-gray-200">
-                            <span className="text-sm font-semibold text-academic-medium tracking-wide uppercase">How are the funds allocated?</span>
-                        </div>
-
-                        {/* Fund Allocation */}
-                        <div className="p-5 md:p-6">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                                {/* UBI */}
-                                <div className="text-center p-3 rounded-lg bg-green-50 border border-green-200">
-                                    <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center mx-auto mb-2">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                    </div>
-                                    <h4 className="text-sm font-bold text-gray-800 mb-1">Basic Income</h4>
-                                    <p className="text-xs text-gray-500 leading-snug">Cash transfers to every person in recipient countries</p>
-                                </div>
-
-                                {/* WTBI */}
-                                <div className="text-center p-3 rounded-lg bg-blue-50 border border-blue-200">
-                                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mx-auto mb-2">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline points="13 11 9 17 15 17 11 23"/></svg>
-                                    </div>
-                                    <h4 className="text-sm font-bold text-gray-800 mb-1">Weather-Triggered Income</h4>
-                                    <p className="text-xs text-gray-500 leading-snug">Extra payments activated during climate disasters</p>
-                                </div>
-
-                                {/* Community Block Grants */}
-                                <div className="text-center p-3 rounded-lg bg-amber-50 border border-amber-200">
-                                    <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center mx-auto mb-2">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                    </div>
-                                    <h4 className="text-sm font-bold text-gray-800 mb-1">Community Grants</h4>
-                                    <p className="text-xs text-gray-500 leading-snug">Local investments in resilience: seawalls, cooling, infrastructure</p>
-                                </div>
-
-                                {/* Disaster Insurance */}
-                                <div className="text-center p-3 rounded-lg bg-red-50 border border-red-200">
-                                    <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center mx-auto mb-2">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                    </div>
-                                    <h4 className="text-sm font-bold text-gray-800 mb-1">Disaster Insurance</h4>
-                                    <p className="text-xs text-gray-500 leading-snug">Insurance fund for extreme weather events like hurricanes and floods</p>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
-                    <a href={PROPOSAL_URL} target="_blank" rel="noopener noreferrer"
-                       className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 flex flex-col items-center text-center group">
-                        <h2 className="text-lg font-bold text-academic-dark mb-2">Read the Proposal</h2>
-                        <p className="text-sm text-gray-500 mb-4 flex-1">Read the full climate compensation proposal (PDF).</p>
-                        <span className="text-sm font-medium text-academic-medium group-hover:underline">Open PDF &rarr;</span>
-                    </a>
-                    <button onClick={() => setActiveView('simulation')}
-                            className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 flex flex-col items-center text-center group">
-                        <h2 className="text-lg font-bold text-academic-dark mb-2">Explore the Simulation</h2>
-                        <p className="text-sm text-gray-500 mb-4 flex-1">Interactive simulator showing projected spending across countries and scenarios.</p>
-                        <span className="text-sm font-medium text-academic-medium group-hover:underline">Launch Simulator &rarr;</span>
-                    </button>
-                    <button onClick={() => setActiveView('survey')}
-                            className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 flex flex-col items-center text-center group">
-                        <h2 className="text-lg font-bold text-academic-dark mb-2">View Survey Results</h2>
-                        <p className="text-sm text-gray-500 mb-4 flex-1">Results from a survey of 14,000+ respondents across 18 countries on climate compensation.</p>
-                        <span className="text-sm font-medium text-academic-medium group-hover:underline">View Results &rarr;</span>
-                    </button>
+                {/* Fund Allocation — dark section */}
+                <div className="bg-black text-white px-6 md:px-10 py-20 md:py-28">
+                    <div className="max-w-5xl mx-auto">
+                        <p className="text-xs font-semibold tracking-widest uppercase text-gray-500 mb-3">Fund Allocation</p>
+                        <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-16">Where the money goes.</h2>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
+                            <div>
+                                <div className="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center mb-4">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                </div>
+                                <h4 className="text-lg font-bold mb-2">Basic Income</h4>
+                                <p className="text-sm text-gray-400 leading-relaxed">Cash transfers to every person in recipient countries, providing a baseline income floor.</p>
+                            </div>
+
+                            <div>
+                                <div className="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center mb-4">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline points="13 11 9 17 15 17 11 23"/></svg>
+                                </div>
+                                <h4 className="text-lg font-bold mb-2">Weather-Triggered Income</h4>
+                                <p className="text-sm text-gray-400 leading-relaxed">Additional payments automatically activated during droughts, hurricanes, and other climate disasters.</p>
+                            </div>
+
+                            <div>
+                                <div className="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center mb-4">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                </div>
+                                <h4 className="text-lg font-bold mb-2">Community Grants</h4>
+                                <p className="text-sm text-gray-400 leading-relaxed">Local investments in resilience infrastructure: seawalls, cooling centers, and community projects.</p>
+                            </div>
+
+                            <div>
+                                <div className="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center mb-4">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                </div>
+                                <h4 className="text-lg font-bold mb-2">Disaster Insurance</h4>
+                                <p className="text-sm text-gray-400 leading-relaxed">Insurance fund for extreme weather events like hurricanes, floods, and prolonged droughts.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Explore — white section with CTA cards */}
+                <div className="bg-white px-6 md:px-10 py-20 md:py-28">
+                    <div className="max-w-5xl mx-auto">
+                        <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-16 text-center">Explore the data.</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                            <button onClick={() => setActiveView('simulation')}
+                                    className="border-2 border-black p-8 text-left group hover:bg-black hover:text-white transition-colors">
+                                <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 group-hover:text-gray-400 mb-3">Interactive Tool</p>
+                                <h3 className="text-xl font-bold mb-2 tracking-tight">Spending Simulator</h3>
+                                <p className="text-sm text-gray-500 group-hover:text-gray-400 leading-relaxed">Explore projected climate compensation spending across countries, years, and policy scenarios.</p>
+                            </button>
+                            <button onClick={() => setActiveView('survey')}
+                                    className="border-2 border-black p-8 text-left group hover:bg-black hover:text-white transition-colors">
+                                <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 group-hover:text-gray-400 mb-3">Global Survey</p>
+                                <h3 className="text-xl font-bold mb-2 tracking-tight">Survey Results</h3>
+                                <p className="text-sm text-gray-500 group-hover:text-gray-400 leading-relaxed">Results from 14,000+ respondents across 18 countries on support for climate compensation.</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="bg-black text-white px-6 md:px-10 py-12 text-center">
+                    <p className="text-sm text-gray-500">The FAIR Proposal &mdash; Banerjee, Duflo &amp; Greenstone</p>
                 </div>
             </div>
         );
@@ -1401,8 +1396,8 @@
                             <Sidebar inputs={inputs} setInputs={setInputs} />
                             <div className="flex-1 p-3 md:p-6 overflow-y-auto bg-gray-100">
                                 <div className="mb-6">
-                                    <h1 className="text-xl md:text-3xl font-bold text-academic-dark academic-font">Climate Compensation Simulator</h1>
-                                    <p className="text-gray-600 mt-1">Based on Banerjee-Duflo-Greenstone climate compensation proposal</p>
+                                    <h1 className="text-2xl md:text-4xl font-bold text-black tracking-tight academic-font">Climate Compensation Simulator</h1>
+                                    <p className="text-gray-500 mt-2">Based on Banerjee-Duflo-Greenstone climate compensation proposal</p>
                                     <div className="flex flex-wrap gap-2 mt-2 text-xs md:text-sm">
                                         <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">{inputs.rcp} x {inputs.ssp}</span>
                                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">Year: {inputs.year}</span>
