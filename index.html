@@ -9,16 +9,19 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Georgia', 'Times New Roman', serif; }
-        .academic-font { font-family: 'Georgia', 'Times New Roman', serif; }
+        body { font-family: 'Inter', Helvetica, Arial, sans-serif; }
+        .academic-font { font-family: 'Inter', Helvetica, Arial, sans-serif; }
     </style>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        academic: { dark: '#1a365d', medium: '#2c5282', light: '#ebf8ff' }
+                        academic: { dark: '#333333', medium: '#2ea3f2', light: '#f7f9fc' }
                     }
                 }
             }
@@ -179,7 +182,7 @@
                         </label>
                         <input type="range" value={inputs.year} onChange={(e) => setInputs({...inputs, year: parseInt(e.target.value)})}
                             min="2020" max="2100" step="1"
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-academic-dark" />
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-academic-medium" />
                         <div className="flex justify-between text-xs text-gray-500 mt-1">
                             <span>2020</span><span>2100</span>
                         </div>
@@ -534,7 +537,7 @@
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                                     activeTab === tab.id
-                                        ? 'text-academic-dark border-b-2 border-academic-dark'
+                                        ? 'text-academic-medium border-b-2 border-academic-medium'
                                         : 'text-gray-500 hover:text-gray-700'
                                 }`}>
                                 {tab.label}
@@ -663,8 +666,8 @@
                             {
                                 label: 'Total Budget',
                                 data: timeSeriesData.map(d => d.budget),
-                                borderColor: '#1a365d',
-                                backgroundColor: 'rgba(26, 54, 93, 0.1)',
+                                borderColor: '#2ea3f2',
+                                backgroundColor: 'rgba(46, 163, 242, 0.1)',
                                 borderWidth: 2,
                                 fill: false,
                                 tension: 0.3
@@ -736,22 +739,22 @@
         // ========== Survey Results Components ==========
 
         const SURVEY_COLORS = {
-            primary: '#1a365d',
-            secondary: '#2c5282',
-            accent: '#3b82f6',
+            primary: '#333333',
+            secondary: '#2ea3f2',
+            accent: '#2ea3f2',
             green: '#22c55e',
             red: '#ef4444',
             amber: '#f59e0b',
             purple: '#8b5cf6',
             gray: '#6b7280',
-            lightBg: '#ebf8ff',
+            lightBg: '#f7f9fc',
             // Likert diverging scale
             likert: ['#166534', '#22c55e', '#9ca3af', '#f97316', '#dc2626'],
         };
 
         const TopNav = ({ activeView, setActiveView }) => (
-            <div className="bg-academic-dark text-white px-4 md:px-6 py-2.5 flex items-center gap-4 md:gap-6">
-                <span onClick={() => setActiveView('landing')} className="font-semibold academic-font text-base md:text-lg whitespace-nowrap cursor-pointer hover:text-white/80">The FAIR Proposal</span>
+            <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-2.5 flex items-center gap-4 md:gap-6 shadow-sm">
+                <span onClick={() => setActiveView('landing')} className="font-semibold academic-font text-base md:text-lg whitespace-nowrap cursor-pointer text-gray-800 hover:text-academic-medium">The FAIR Proposal</span>
                 <div className="flex gap-1">
                     {[
                         { id: 'simulation', label: 'Simulation' },
@@ -761,8 +764,8 @@
                             onClick={() => setActiveView(tab.id)}
                             className={`px-3 md:px-4 py-1.5 rounded text-sm font-medium transition-colors ${
                                 activeView === tab.id
-                                    ? 'bg-white/20 text-white'
-                                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                                    ? 'bg-academic-medium/10 text-academic-medium'
+                                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
                             }`}>
                             {tab.label}
                         </button>
@@ -827,7 +830,7 @@
             const pctClimate = q31Total > 0 ? (cellData.q31[0] / q31Total * 100).toFixed(0) : '\u2014';
             return (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-white rounded-lg shadow p-4 border-l-4 border-academic-dark">
+                    <div className="bg-white rounded-lg shadow p-4 border-l-4 border-academic-medium">
                         <p className="text-xs text-gray-500 uppercase">Support Compensation</p>
                         <p className="text-3xl font-bold text-academic-dark">{pctSupport}%</p>
                         <p className="text-xs text-gray-400 mt-1">say "Yes" to climate compensation</p>
@@ -1188,8 +1191,8 @@
                 <div className="max-w-4xl w-full mb-10">
                     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                         {/* Header */}
-                        <div className="bg-academic-dark text-white px-6 py-4 text-center">
-                            <h2 className="text-xl md:text-2xl font-bold academic-font">How FAIR Works: A Grand Bargain</h2>
+                        <div className="border-t-4 border-academic-medium px-6 py-4 text-center">
+                            <h2 className="text-xl md:text-2xl font-bold academic-font text-academic-dark">How FAIR Works: A Grand Bargain</h2>
                         </div>
 
                         {/* The Two Sides */}
@@ -1198,7 +1201,7 @@
                             <div className="p-5 md:p-6 border-b md:border-b-0 md:border-r border-gray-200">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a365d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                                     </div>
                                     <h3 className="text-lg font-bold text-academic-dark">Wealthy Countries</h3>
                                 </div>
@@ -1385,7 +1388,7 @@
                 return results;
             }, [rawData, inputs]);
 
-            if (loading) return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-academic-dark"></div></div>;
+            if (loading) return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-academic-medium"></div></div>;
             if (error) return <div className="flex items-center justify-center h-screen text-red-600"><p className="text-xl font-bold">Error: {error}</p></div>;
 
             return (
