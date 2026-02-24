@@ -1678,8 +1678,27 @@
             </div>
         );
 
+        const VALID_VIEWS = new Set(['landing', 'simulation', 'revenue', 'survey']);
+        const VIEW_ALIASES = { spending: 'simulation' };
+        const getViewFromHash = () => {
+            const h = window.location.hash.slice(1).toLowerCase();
+            if (VIEW_ALIASES[h]) return VIEW_ALIASES[h];
+            return VALID_VIEWS.has(h) ? h : 'landing';
+        };
+
         const App = () => {
-            const [activeView, setActiveView] = useState('landing');
+            const [activeView, setActiveViewState] = useState(getViewFromHash);
+
+            const setActiveView = (view) => {
+                setActiveViewState(view);
+                window.location.hash = view === 'landing' ? '' : (view === 'simulation' ? 'spending' : view);
+            };
+
+            useEffect(() => {
+                const onHashChange = () => setActiveViewState(getViewFromHash());
+                window.addEventListener('hashchange', onHashChange);
+                return () => window.removeEventListener('hashchange', onHashChange);
+            }, []);
             const [rawData, setRawData] = useState(null);
             const [worldPaths, setWorldPaths] = useState(null);
             const [surveyData, setSurveyData] = useState(null);
