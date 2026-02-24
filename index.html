@@ -1192,6 +1192,7 @@
         const DEFAULT_REVENUE_STATE = {
             corpScenario: 1, // Raise to 21%
             brackets: [{ threshold: 1e9, rate: 2 }],
+            oecdOnly: true,
         };
 
         const WEALTH_THRESHOLDS = [
@@ -1262,7 +1263,7 @@
             return (v * 1000).toFixed(0) + 'M';
         };
 
-        const RevenueSidebar = ({ scenario, setScenario, brackets, setBrackets, onReset }) => {
+        const RevenueSidebar = ({ scenario, setScenario, brackets, setBrackets, oecdOnly, setOecdOnly, onReset }) => {
             const addBracket = () => setBrackets(b => [...b, { threshold: 1e8, rate: 1 }]);
             const removeBracket = (i) => setBrackets(b => b.filter((_, j) => j !== i));
             const updateBracket = (i, field, val) => setBrackets(b => b.map((br, j) => j === i ? { ...br, [field]: val } : br));
@@ -1316,6 +1317,17 @@
                                 + Add bracket
                             </button>
                         </div>
+
+                        {/* OECD filter */}
+                        <div className="border-t pt-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={oecdOnly}
+                                    onChange={e => setOecdOnly(e.target.checked)}
+                                    className="w-4 h-4 text-academic-medium border-gray-300 rounded focus:ring-academic-medium" />
+                                <span className="text-sm font-medium text-gray-700">OECD countries only</span>
+                            </label>
+                            <p className="text-xs text-gray-500 mt-1 ml-6">Restrict to 38 OECD member countries</p>
+                        </div>
                     </div>
 
                     <button onClick={onReset}
@@ -1345,20 +1357,22 @@
         const RevenueSimulation = ({ revenueData, wealthData }) => {
             const [scenario, setScenario] = useState(DEFAULT_REVENUE_STATE.corpScenario);
             const [brackets, setBrackets] = useState(DEFAULT_REVENUE_STATE.brackets);
+            const [oecdOnly, setOecdOnly] = useState(DEFAULT_REVENUE_STATE.oecdOnly);
             const [sortCol, setSortCol] = useState('total');
             const [sortDir, setSortDir] = useState(-1);
 
             const handleReset = () => {
                 setScenario(DEFAULT_REVENUE_STATE.corpScenario);
                 setBrackets([...DEFAULT_REVENUE_STATE.brackets]);
+                setOecdOnly(DEFAULT_REVENUE_STATE.oecdOnly);
             };
 
-            // --- Corporate tax by country name (OECD only) ---
+            // --- Corporate tax by country name ---
             const corpByName = useMemo(() => {
                 const map = {};
                 if (scenario === 'none') return map;
                 Object.entries(revenueData.c).forEach(([name, d]) => {
-                    if (!OECD_COUNTRIES.has(name)) return;
+                    if (oecdOnly && !OECD_COUNTRIES.has(name)) return;
                     const baseline = d.co ? d.co[0] : d.r[0];
                     const scenarioRev = d.r[scenario];
                     if (scenarioRev != null && baseline != null) {
@@ -1366,7 +1380,7 @@
                     }
                 });
                 return map;
-            }, [revenueData, scenario]);
+            }, [revenueData, scenario, oecdOnly]);
 
             // --- Wealth tax by country name (OECD only) ---
             const sortedBrackets = useMemo(() =>
@@ -1378,12 +1392,12 @@
                 if (!wealthData) return map;
                 const th = wealthData.th;
                 Object.entries(wealthData.c).forEach(([name, d]) => {
-                    if (!OECD_COUNTRIES.has(name)) return;
+                    if (oecdOnly && !OECD_COUNTRIES.has(name)) return;
                     const result = computeCountryWealthTax(d, th, sortedBrackets);
                     if (result.rev > 0) map[name] = { rev: result.rev / 1e9, n: result.n };
                 });
                 return map;
-            }, [wealthData, sortedBrackets]);
+            }, [wealthData, sortedBrackets, oecdOnly]);
 
             // --- Combined rows ---
             const combinedRows = useMemo(() => {
@@ -1450,7 +1464,8 @@
             return (
                 <div className="flex flex-col md:flex-row" style={{minHeight: 'calc(100vh - 44px)'}}>
                     <RevenueSidebar scenario={scenario} setScenario={setScenario}
-                        brackets={brackets} setBrackets={setBrackets} onReset={handleReset} />
+                        brackets={brackets} setBrackets={setBrackets}
+                        oecdOnly={oecdOnly} setOecdOnly={setOecdOnly} onReset={handleReset} />
                     <div className="flex-1 p-3 md:p-6 overflow-y-auto bg-gray-100">
                         {/* Header */}
                         <div className="mb-6">
