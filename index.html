@@ -1334,39 +1334,31 @@
             );
         };
 
-        const REVENUE_NAME_TO_ISO2 = {
-            'Argentina':'AR','Australia':'AU','Austria':'AT','Bangladesh':'BD','Belgium':'BE','Bermuda':'BM',
-            'Brazil':'BR','Canada':'CA','Chile':'CL','China':'CN','Cyprus':'CY','Czech Republic':'CZ',
-            'Denmark':'DK','Egypt':'EG','Estonia':'EE','Finland':'FI','France':'FR','Germany':'DE','Greece':'GR',
-            'Hong Kong':'HK','Hungary':'HU','India':'IN','Indonesia':'ID','Ireland':'IE','Isle of Man':'IM',
-            'Israel':'IL','Italy':'IT','Japan':'JP','Kazakhstan':'KZ','Korea':'KR','Latvia':'LV','Luxembourg':'LU',
-            'Malaysia':'MY','Malta':'MT','Mexico':'MX','Netherlands':'NL','New Zealand':'NZ','Nigeria':'NG',
-            'Norway':'NO','Pakistan':'PK','Peru':'PE','Philippines':'PH','Poland':'PL','Portugal':'PT',
-            'Romania':'RO','Russia':'RU','Saudi Arabia':'SA','Singapore':'SG','Slovakia':'SK','Slovenia':'SI',
-            'South Africa':'ZA','Spain':'ES','Sweden':'SE','Switzerland':'CH','Taiwan':'TW','Turkey':'TR',
-            'United Arab Emirates':'AE','United Kingdom':'GB','United States':'US','Vietnam':'VN',
-        };
+        const OECD_COUNTRIES = new Set([
+            'Australia','Austria','Belgium','Canada','Chile','Colombia','Costa Rica','Czech Republic',
+            'Denmark','Estonia','Finland','France','Germany','Greece','Hungary','Iceland','Ireland',
+            'Israel','Italy','Japan','Korea','Latvia','Lithuania','Luxembourg','Mexico','Netherlands',
+            'New Zealand','Norway','Poland','Portugal','Slovakia','Slovenia','Spain','Sweden',
+            'Switzerland','Turkey','United Kingdom','United States',
+        ]);
 
-        const REVENUE_SCALE = ['#e5e7eb', '#c4c7cc', '#9ca3af', '#6b7280', '#4b5563', '#374151', '#1f2937', '#111827'];
-
-        const RevenueSimulation = ({ revenueData, wealthData, worldPaths }) => {
+        const RevenueSimulation = ({ revenueData, wealthData }) => {
             const [scenario, setScenario] = useState(DEFAULT_REVENUE_STATE.corpScenario);
             const [brackets, setBrackets] = useState(DEFAULT_REVENUE_STATE.brackets);
             const [sortCol, setSortCol] = useState('total');
             const [sortDir, setSortDir] = useState(-1);
-            const [tooltip, setTooltip] = useState(null);
-            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
             const handleReset = () => {
                 setScenario(DEFAULT_REVENUE_STATE.corpScenario);
                 setBrackets([...DEFAULT_REVENUE_STATE.brackets]);
             };
 
-            // --- Corporate tax by country name ---
+            // --- Corporate tax by country name (OECD only) ---
             const corpByName = useMemo(() => {
                 const map = {};
                 if (scenario === 'none') return map;
                 Object.entries(revenueData.c).forEach(([name, d]) => {
+                    if (!OECD_COUNTRIES.has(name)) return;
                     const baseline = d.co ? d.co[0] : d.r[0];
                     const scenarioRev = d.r[scenario];
                     if (scenarioRev != null && baseline != null) {
@@ -1376,7 +1368,7 @@
                 return map;
             }, [revenueData, scenario]);
 
-            // --- Wealth tax by country name ---
+            // --- Wealth tax by country name (OECD only) ---
             const sortedBrackets = useMemo(() =>
                 [...brackets].filter(b => b.rate > 0).sort((a, b) => a.threshold - b.threshold),
             [brackets]);
@@ -1386,6 +1378,7 @@
                 if (!wealthData) return map;
                 const th = wealthData.th;
                 Object.entries(wealthData.c).forEach(([name, d]) => {
+                    if (!OECD_COUNTRIES.has(name)) return;
                     const result = computeCountryWealthTax(d, th, sortedBrackets);
                     if (result.rev > 0) map[name] = { rev: result.rev / 1e9, n: result.n };
                 });
@@ -1413,40 +1406,6 @@
             const corpTotal = useMemo(() => combinedRows.reduce((s, r) => s + r.corp, 0), [combinedRows]);
             const wealthTotal = useMemo(() => combinedRows.reduce((s, r) => s + r.wealth, 0), [combinedRows]);
             const combinedTotal = corpTotal + wealthTotal;
-
-            // --- Map colors ---
-            const mapColors = useMemo(() => {
-                const colors = {};
-                const revenueByIso2 = {};
-                combinedRows.forEach(r => {
-                    const iso2 = REVENUE_NAME_TO_ISO2[r.name];
-                    if (iso2) revenueByIso2[iso2] = r.total;
-                });
-                const values = Object.values(revenueByIso2).filter(v => v > 0).sort((a, b) => a - b);
-                Object.entries(revenueByIso2).forEach(([iso2, val]) => {
-                    if (val <= 0) { colors[iso2] = REVENUE_SCALE[0]; return; }
-                    const idx = values.findIndex(v => v >= val);
-                    const q = idx === -1 ? REVENUE_SCALE.length - 1 : Math.floor((idx / values.length) * REVENUE_SCALE.length);
-                    colors[iso2] = REVENUE_SCALE[Math.min(q, REVENUE_SCALE.length - 1)];
-                });
-                return colors;
-            }, [combinedRows]);
-
-            // --- Map tooltip ---
-            const getMapTooltip = (iso2) => {
-                const name = Object.keys(REVENUE_NAME_TO_ISO2).find(k => REVENUE_NAME_TO_ISO2[k] === iso2);
-                const row = name ? combinedRows.find(r => r.name === name) : null;
-                const countryName = name || (worldPaths[iso2]?.name) || iso2;
-                if (!row) return (<div><div className="font-semibold">{countryName}</div><div className="text-gray-400">No data</div></div>);
-                return (
-                    <div>
-                        <div className="font-semibold">{row.name}</div>
-                        <div>Total: <span className="font-medium">${fmtB(row.total)}</span></div>
-                        {row.corp > 0 && <div className="text-xs">Corporate: ${fmtB(row.corp)}</div>}
-                        {row.wealth > 0 && <div className="text-xs">Wealth: ${fmtB(row.wealth)}</div>}
-                    </div>
-                );
-            };
 
             // --- Combined bar chart ---
             const topCountries = useMemo(() =>
@@ -1514,44 +1473,6 @@
                                 <p className="text-3xl font-bold text-black mt-1">${fmtB(wealthTotal)}</p>
                             </div>
                         </div>
-
-                        {/* Map */}
-                        {worldPaths && (
-                            <div className="bg-white rounded-lg shadow p-4 mb-6">
-                                <h3 className="text-sm font-semibold text-black mb-2">Total Revenue by Country</h3>
-                                <div className="relative" style={{ height: '380px' }} onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}>
-                                    <svg viewBox="0 0 1000 500" className="w-full h-full" style={{ background: '#f8fafc' }}>
-                                        {Object.entries(worldPaths).map(([iso2, data]) => (
-                                            <path key={iso2} d={data.path}
-                                                fill={mapColors[iso2] || '#f3f4f6'}
-                                                stroke="#fff" strokeWidth="0.5"
-                                                className="cursor-pointer hover:opacity-80 transition-opacity"
-                                                onMouseEnter={() => setTooltip(iso2)}
-                                                onMouseLeave={() => setTooltip(null)} />
-                                        ))}
-                                    </svg>
-                                    {tooltip && (
-                                        <div className="fixed bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg text-sm z-50 pointer-events-none"
-                                            style={{ left: mousePos.x + 15, top: mousePos.y + 15 }}>
-                                            {getMapTooltip(tooltip)}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500">
-                                    <span>Low</span>
-                                    <div className="flex">
-                                        {REVENUE_SCALE.map((color, i) => (
-                                            <div key={i} className="w-6 h-3" style={{ background: color }}></div>
-                                        ))}
-                                    </div>
-                                    <span>High</span>
-                                    <span className="ml-4 flex items-center gap-1">
-                                        <div className="w-3 h-3" style={{ background: '#f3f4f6', border: '1px solid #d1d5db' }}></div>
-                                        No data
-                                    </span>
-                                </div>
-                            </div>
-                        )}
 
                         {/* Combined Bar Chart */}
                         <div className="bg-white rounded-lg shadow p-5 mb-6">
@@ -1863,7 +1784,7 @@
                             </div>
                         </div>
                     ) : activeView === 'revenue' ? (
-                        revenueData ? <RevenueSimulation revenueData={revenueData} wealthData={wealthData} worldPaths={worldPaths} /> : <div className="p-8 text-gray-500">No revenue data loaded.</div>
+                        revenueData ? <RevenueSimulation revenueData={revenueData} wealthData={wealthData} /> : <div className="p-8 text-gray-500">No revenue data loaded.</div>
                     ) : (
                         <SurveyView surveyData={surveyData} />
                     )}
