@@ -41,14 +41,6 @@
 
         const DATA_YEARS = Array.from({length: 80}, (_, i) => 2020 + i); // 2020-2099
 
-        const RCP_MULTIPLIERS = {
-            'RCP 4.5': 1.0
-        };
-
-        const SSP_MULTIPLIERS = {
-            'SSP 2': 1.0
-        };
-
         // ISO 3-letter to 2-letter code mapping for world map
         const ISO3_TO_ISO2 = {
             AFG:'AF',ALB:'AL',DZA:'DZ',AND:'AD',AGO:'AO',ATG:'AG',ARG:'AR',ARM:'AM',AUS:'AU',AUT:'AT',
@@ -699,7 +691,7 @@
                             title: {
                                 display: true,
                                 text: 'Budget vs Spending Over Time (2020-2100)',
-                                font: { size: 14, family: 'Georgia' }
+                                font: { size: 14, family: "'DM Sans', Helvetica, Arial, sans-serif" }
                             },
                             tooltip: {
                                 callbacks: {
@@ -1383,7 +1375,7 @@
                 return map;
             }, [revenueData, scenario, oecdOnly]);
 
-            // --- Wealth tax by country name (OECD only) ---
+            // --- Wealth tax by country name ---
             const sortedBrackets = useMemo(() =>
                 [...brackets].filter(b => b.rate > 0).sort((a, b) => a.threshold - b.threshold),
             [brackets]);
