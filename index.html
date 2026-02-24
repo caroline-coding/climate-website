@@ -1491,8 +1491,8 @@
                         </div>
 
                         {/* Combined Table */}
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                            <table className="w-full text-sm">
+                        <div className="bg-white rounded-lg shadow overflow-x-auto">
+                            <table className="w-full text-sm min-w-[500px]">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-200">
                                         <th className="text-left px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none hover:text-black" onClick={() => toggleSort('name')}>
@@ -1786,9 +1786,6 @@
                                 <MapSection countryData={countryData} worldPaths={worldPaths} />
                                 <TimeSeriesChart rawData={rawData} inputs={inputs} />
                                 <SpendingTable countryData={countryData} />
-                                <div className="mt-8 text-center text-xs text-gray-400 pb-4">
-                                    <p>Climate Compensation Simulator v2</p>
-                                </div>
                             </div>
                         </div>
                     ) : activeView === 'revenue' ? (
