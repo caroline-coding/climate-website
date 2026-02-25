@@ -70,14 +70,26 @@
         const DAMAGES_SCALE = ['#fef3c7', '#fcd34d', '#f59e0b', '#d97706', '#b45309', '#78350f'];
         const SPENDING_SCALE = ['#ede9fe', '#c4b5fd', '#8b5cf6', '#7c3aed', '#6d28d9', '#4c1d95'];
 
+
         // Shortened display names for long country names
         const SHORT_NAMES = {
             'Russian Federation': 'Russia',
             'United Kingdom of Great Britain and Northern Ireland': 'United Kingdom',
+            'United States of America': 'United States',
             'Venezuela (Bolivarian Republic of)': 'Venezuela',
+            'Bolivia (Plurinational State of)': 'Bolivia',
+            'Iran (Islamic Republic of)': 'Iran',
             'Korea, Republic of': 'South Korea',
             'Viet Nam': 'Vietnam',
-            'Moldova, Republic of': 'Moldova'
+            'Moldova, Republic of': 'Moldova',
+            'Tanzania, United Republic of': 'Tanzania',
+            'Congo, Democratic Republic of the': 'DR Congo',
+            'Lao People\'s Democratic Republic': 'Laos',
+            'Micronesia (Federated States of)': 'Micronesia',
+            'Saint Vincent and the Grenadines': 'St. Vincent & Grenadines',
+            'Central African Republic': 'Central African Rep.',
+            'Bosnia and Herzegovina': 'Bosnia & Herzegovina',
+            'Sao Tome and Principe': 'Sao Tome & Principe',
         };
         const shortenName = (name) => SHORT_NAMES[name] || name;
 
@@ -92,11 +104,12 @@
         // Allocation logic matching Python simulation
         // Data format: [population, budget, ubi_needed, wtbi_needed, community, disaster, incomeGroup]
         // incomeGroup: 0=Low, 1=LowerMiddle, 2=UpperMiddle, 3=High
-        const allocateSpending = (yearData, ubiRateAdj, wtbiRateAdj, communityAdj, disasterAdj, topUpWtbi, vslAdj, year) => {
+        const allocateSpending = (yearData, ubiRateAdj, wtbiRateAdj, communityAdj, disasterAdj, topUpWtbi, vslAdj, year, budgetScale = 1) => {
             const [population, budgetBase, ubiNeededBase, wtbiNeededBase, communityBase, disasterBase, incomeGroup] = yearData;
 
             // Scale damages-based values by VSL adjustment (default VSL = $2M)
-            const budget = budgetBase * vslAdj;
+            // budgetScale only reduces available money, not underlying needs
+            const budget = budgetBase * vslAdj * budgetScale;
             const community = communityBase * vslAdj;
             const disaster = disasterBase * vslAdj;
 
@@ -148,11 +161,10 @@
             };
         };
 
-        const Sidebar = ({ inputs, setInputs }) => {
-            const [showAdvanced, setShowAdvanced] = useState(false);
+        const DamagesSidebar = ({ inputs, setInputs }) => {
             return (
             <div className="w-full md:w-80 bg-white shadow-lg p-4 md:p-6 md:h-screen overflow-y-auto border-b md:border-b-0 md:border-r border-gray-200">
-                <h2 className="text-lg font-semibold text-academic-dark mb-6 border-b pb-2">Model Parameters</h2>
+                <h2 className="text-lg font-semibold text-academic-dark mb-6 border-b pb-2">Damages Parameters</h2>
                 <div className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Emissions Scenario</label>
@@ -182,82 +194,21 @@
                         </div>
                     </div>
 
-                    <div className="border-t pt-4">
-                        <button
-                            onClick={() => setShowAdvanced(!showAdvanced)}
-                            className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 hover:text-academic-dark transition-colors">
-                            <span>Additional Parameters</span>
-                            <span className="text-lg">{showAdvanced ? '−' : '+'}</span>
-                        </button>
-                        {showAdvanced && (
-                        <div className="mt-4 space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">UBI Rate ($/day)</label>
-                            <input type="number" value={inputs.ubiRate === '' ? '' : inputs.ubiRate}
-                                onChange={(e) => setInputs({...inputs, ubiRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
-                                onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, ubiRate: 3.0}); }}
-                                onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
-                                min="0.5" max="20" step="0.1"
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
-                            <p className="text-xs text-gray-500 mt-1">Universal Basic Income daily rate (PPP $)</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">WTBI Rate ($/day)</label>
-                            <input type="number" value={inputs.wtbiRate === '' ? '' : inputs.wtbiRate}
-                                onChange={(e) => setInputs({...inputs, wtbiRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
-                                onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, wtbiRate: 4.2}); }}
-                                onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
-                                min="0.5" max="20" step="0.1"
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
-                            <p className="text-xs text-gray-500 mt-1">Weather-Triggered Basic Income daily rate (PPP $)</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Community Grants Share (%)</label>
-                            <input type="number" value={inputs.communityShare === '' ? '' : inputs.communityShare}
-                                onChange={(e) => setInputs({...inputs, communityShare: e.target.value === '' ? '' : parseFloat(e.target.value)})}
-                                onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, communityShare: 10}); }}
-                                onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
-                                min="0" max="100" step="1"
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
-                            <p className="text-xs text-gray-500 mt-1">Share of damages for community block grants</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Disaster Coverage Rate (%)</label>
-                            <input type="number" value={inputs.disasterRate === '' ? '' : inputs.disasterRate}
-                                onChange={(e) => setInputs({...inputs, disasterRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
-                                onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, disasterRate: 0.8}); }}
-                                onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
-                                min="0" max="10" step="0.1"
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
-                            <p className="text-xs text-gray-500 mt-1">Share of global damages for disaster insurance</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Value of Statistical Life ($M)</label>
-                            <input type="number" value={inputs.vsl === '' ? '' : inputs.vsl}
-                                onChange={(e) => setInputs({...inputs, vsl: e.target.value === '' ? '' : parseFloat(e.target.value)})}
-                                onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, vsl: 2.0}); }}
-                                onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
-                                min="0.5" max="20" step="0.5"
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
-                            <p className="text-xs text-gray-500 mt-1">Scales all damages proportionally (default $2M)</p>
-                        </div>
-                        <div className="col-span-2">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={inputs.topUpWtbi}
-                                    onChange={(e) => setInputs({...inputs, topUpWtbi: e.target.checked})}
-                                    className="w-4 h-4 text-academic-medium border-gray-300 rounded focus:ring-academic-medium" />
-                                <span className="text-sm font-medium text-gray-700">Top up WTBI with unused funds</span>
-                            </label>
-                            <p className="text-xs text-gray-500 mt-1 ml-6">When enabled, leftover budget increases WTBI payments</p>
-                        </div>
-                        </div>
-                        )}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Value of Statistical Life ($M)</label>
+                        <input type="number" value={inputs.vsl === '' ? '' : inputs.vsl}
+                            onChange={(e) => setInputs({...inputs, vsl: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+                            onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, vsl: 2.0}); }}
+                            onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
+                            min="0.5" max="20" step="0.5"
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
+                        <p className="text-xs text-gray-500 mt-1">Scales all damages proportionally (default $2M)</p>
                     </div>
                 </div>
 
                 <button
-                    onClick={() => setInputs({ rcp: 'RCP 4.5', ssp: 'SSP 2', year: 2050, ubiRate: 3.0, wtbiRate: 4.2, communityShare: 10, disasterRate: 0.8, topUpWtbi: true, vsl: 2.0 })}
-                    className="w-full mt-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-md transition-colors">
+                    onClick={() => setInputs({...inputs, year: 2050, vsl: 2.0})}
+                    className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-md transition-colors">
                     Reset to Defaults
                 </button>
 
@@ -266,15 +217,459 @@
                     <div className="text-xs space-y-1 text-gray-600">
                         <p>Climate: <span className="font-medium">{inputs.rcp}</span></p>
                         <p>Development: <span className="font-medium">{inputs.ssp}</span></p>
+                        <p>Year: <span className="font-medium">{inputs.year}</span></p>
+                        <p>VSL: <span className="font-medium">${inputs.vsl === '' ? 2.0 : inputs.vsl}M</span></p>
+                    </div>
+                </div>
+            </div>
+            );
+        };
+
+        const SpendingSidebar = ({ inputs, setInputs, totalRevenue }) => {
+            const formatRev = (v) => v >= 1000 ? `$${(v / 1000).toFixed(2)}T` : `$${v.toFixed(0)}B`;
+            return (
+            <div className="w-full md:w-80 bg-white shadow-lg p-4 md:p-6 md:h-screen overflow-y-auto border-b md:border-b-0 md:border-r border-gray-200">
+                <h2 className="text-lg font-semibold text-academic-dark mb-6 border-b pb-2">Spending Parameters</h2>
+
+                <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                    <p className="text-xs text-gray-500 uppercase mb-1">From Damages</p>
+                    <p className="text-sm text-gray-700">Year: <span className="font-bold text-academic-dark">{inputs.year}</span> | VSL: <span className="font-bold text-academic-dark">${inputs.vsl === '' ? 2.0 : inputs.vsl}M</span></p>
+                </div>
+
+                <div className="mb-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={inputs.capToRevenue}
+                            onChange={(e) => setInputs({...inputs, capToRevenue: e.target.checked})}
+                            className="w-4 h-4 text-academic-medium border-gray-300 rounded focus:ring-academic-medium" />
+                        <span className="text-sm font-medium text-gray-700">Limit spending to revenue</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1 ml-6">
+                        Cap total budget at revenue ({formatRev(totalRevenue)}) from Revenue tab
+                    </p>
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">UBI Rate ($/day)</label>
+                        <input type="number" value={inputs.ubiRate === '' ? '' : inputs.ubiRate}
+                            onChange={(e) => setInputs({...inputs, ubiRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+                            onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, ubiRate: 3.0}); }}
+                            onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
+                            min="0.5" max="20" step="0.1"
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
+                        <p className="text-xs text-gray-500 mt-1">Universal Basic Income daily rate (PPP $)</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">WTBI Rate ($/day)</label>
+                        <input type="number" value={inputs.wtbiRate === '' ? '' : inputs.wtbiRate}
+                            onChange={(e) => setInputs({...inputs, wtbiRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+                            onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, wtbiRate: 4.2}); }}
+                            onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
+                            min="0.5" max="20" step="0.1"
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
+                        <p className="text-xs text-gray-500 mt-1">Weather-Triggered Basic Income daily rate (PPP $)</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Community Grants Share (%)</label>
+                        <input type="number" value={inputs.communityShare === '' ? '' : inputs.communityShare}
+                            onChange={(e) => setInputs({...inputs, communityShare: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+                            onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, communityShare: 10}); }}
+                            onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
+                            min="0" max="100" step="1"
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
+                        <p className="text-xs text-gray-500 mt-1">Share of damages for community block grants</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Disaster Coverage Rate (%)</label>
+                        <input type="number" value={inputs.disasterRate === '' ? '' : inputs.disasterRate}
+                            onChange={(e) => setInputs({...inputs, disasterRate: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+                            onBlur={(e) => { if (e.target.value === '') setInputs({...inputs, disasterRate: 0.8}); }}
+                            onKeyDown={(e) => { if (!/[0-9.]/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) e.preventDefault(); }}
+                            min="0" max="10" step="0.1"
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-academic-medium" />
+                        <p className="text-xs text-gray-500 mt-1">Share of global damages for disaster insurance</p>
+                    </div>
+                    <div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked={inputs.topUpWtbi}
+                                onChange={(e) => setInputs({...inputs, topUpWtbi: e.target.checked})}
+                                className="w-4 h-4 text-academic-medium border-gray-300 rounded focus:ring-academic-medium" />
+                            <span className="text-sm font-medium text-gray-700">Top up WTBI with unused funds</span>
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1 ml-6">When enabled, leftover budget increases WTBI payments</p>
+                    </div>
+                </div>
+
+                <button
+                    onClick={() => setInputs({...inputs, ubiRate: 3.0, wtbiRate: 4.2, communityShare: 10, disasterRate: 0.8, topUpWtbi: true, capToRevenue: false})}
+                    className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-md transition-colors">
+                    Reset to Defaults
+                </button>
+
+                <div className="mt-8 pt-4 border-t border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-600 mb-3">Current Settings</h3>
+                    <div className="text-xs space-y-1 text-gray-600">
                         <p>UBI: <span className="font-medium">${inputs.ubiRate === '' ? 3.0 : inputs.ubiRate}/day</span></p>
                         <p>WTBI: <span className="font-medium">${inputs.wtbiRate === '' ? 4.2 : inputs.wtbiRate}/day</span></p>
                         <p>Community: <span className="font-medium">{inputs.communityShare === '' ? 10 : inputs.communityShare}%</span></p>
                         <p>Disaster: <span className="font-medium">{inputs.disasterRate === '' ? 0.8 : inputs.disasterRate}%</span></p>
-                        <p>VSL: <span className="font-medium">${inputs.vsl === '' ? 2.0 : inputs.vsl}M</span></p>
                         <p>Top-up: <span className="font-medium">{inputs.topUpWtbi ? 'Yes' : 'No'}</span></p>
                     </div>
                 </div>
             </div>
+            );
+        };
+
+        const DamagesMap = ({ countryData, worldPaths }) => {
+            const [tooltip, setTooltip] = useState(null);
+            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+            const countryLookup = useMemo(() => {
+                const lookup = {};
+                countryData.forEach(c => { lookup[c.code] = c; });
+                return lookup;
+            }, [countryData]);
+
+            const damagesColors = useMemo(() => {
+                const colors = {};
+                const damagesPerCapita = countryData.map(c => c.population > 0 ? c.budget / c.population : 0).filter(v => v > 0);
+                damagesPerCapita.sort((a, b) => a - b);
+
+                const getQuantileColor = (value, sortedValues, scale) => {
+                    if (value <= 0) return scale[0];
+                    const idx = sortedValues.findIndex(v => v >= value);
+                    const quantile = idx === -1 ? scale.length - 1 : Math.floor((idx / sortedValues.length) * scale.length);
+                    return scale[Math.min(quantile, scale.length - 1)];
+                };
+
+                countryData.forEach(c => {
+                    const iso2 = ISO3_TO_ISO2[c.code];
+                    if (!iso2) return;
+                    const dpc = c.population > 0 ? c.budget / c.population : 0;
+                    colors[iso2] = getQuantileColor(dpc, damagesPerCapita, DAMAGES_SCALE);
+                });
+                return colors;
+            }, [countryData]);
+
+            const getTooltipContent = (iso2) => {
+                const iso3 = Object.keys(ISO3_TO_ISO2).find(k => ISO3_TO_ISO2[k] === iso2);
+                const country = iso3 ? countryLookup[iso3] : null;
+                if (!country) {
+                    const pathData = worldPaths[iso2];
+                    const countryName = pathData?.name || iso2;
+                    return (<div><div className="font-semibold">{countryName}</div><div className="text-gray-400">No data</div></div>);
+                }
+                const formatNum = (n) => {
+                    if (n >= 1e9) return `$${(n/1e9).toFixed(1)}B`;
+                    if (n >= 1e6) return `$${(n/1e6).toFixed(1)}M`;
+                    return `$${n.toFixed(0)}`;
+                };
+                const dpc = country.population > 0 ? country.budget / country.population : 0;
+                return (
+                    <div>
+                        <div className="font-semibold">{country.name}</div>
+                        <div>Damages/Capita: <span className="font-medium">${Math.round(dpc)}</span></div>
+                        <div>Total Damages: {formatNum(country.budget)}</div>
+                    </div>
+                );
+            };
+
+            const handleMouseMove = (e) => { setMousePos({ x: e.clientX, y: e.clientY }); };
+            if (!worldPaths) return null;
+
+            return (
+                <div className="bg-white rounded-lg shadow p-4 mb-6">
+                    <h3 className="text-sm font-semibold text-academic-dark mb-4">Damages per Capita</h3>
+                    <div className="relative" style={{ height: '400px' }} onMouseMove={handleMouseMove}>
+                        <svg viewBox="0 0 1000 500" className="w-full h-full" style={{ background: '#f8fafc' }}>
+                            {Object.entries(worldPaths).map(([iso2, data]) => (
+                                <path key={iso2} d={data.path}
+                                    fill={damagesColors[iso2] || PROGRAM_COLORS.noData}
+                                    stroke="#fff" strokeWidth="0.5"
+                                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                                    onMouseEnter={() => setTooltip(iso2)}
+                                    onMouseLeave={() => setTooltip(null)} />
+                            ))}
+                        </svg>
+                        {tooltip && (
+                            <div className="fixed bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg text-sm z-50 pointer-events-none"
+                                style={{ left: mousePos.x + 15, top: mousePos.y + 15 }}>
+                                {getTooltipContent(tooltip)}
+                            </div>
+                        )}
+                    </div>
+                    <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="text-gray-500">Low</span>
+                            <div className="flex">
+                                {DAMAGES_SCALE.map((color, i) => (
+                                    <div key={i} className="w-6 h-4" style={{ background: color }}></div>
+                                ))}
+                            </div>
+                            <span className="text-gray-500">High</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded" style={{ background: PROGRAM_COLORS.noData }}></div>
+                            <span>No Data</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const DamagesTable = ({ countryData }) => {
+            const [sortField, setSortField] = useState('budget');
+            const [sortDir, setSortDir] = useState('desc');
+
+            const sortedData = useMemo(() => {
+                return [...countryData]
+                    .filter(c => c.budget > 0)
+                    .sort((a, b) => sortDir === 'desc' ? b[sortField] - a[sortField] : a[sortField] - b[sortField]);
+            }, [countryData, sortField, sortDir]);
+
+            const handleSort = (field) => {
+                if (sortField === field) setSortDir(sortDir === 'desc' ? 'asc' : 'desc');
+                else { setSortField(field); setSortDir('desc'); }
+            };
+
+            const SortHeader = ({ field, label }) => (
+                <th onClick={() => handleSort(field)}
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center gap-1">
+                        {label}
+                        {sortField === field && <span className="text-academic-dark">{sortDir === 'desc' ? '▼' : '▲'}</span>}
+                    </div>
+                </th>
+            );
+
+            const formatB = (val) => {
+                if (val === 0) return '$0';
+                if (Math.abs(val) < 1e9) return `$${(val / 1e6).toFixed(0)}M`;
+                return `$${(val / 1e9).toFixed(1)}B`;
+            };
+
+            const formatPop = (val) => {
+                if (val >= 1e9) return `${(val / 1e9).toFixed(2)}B`;
+                if (val >= 1e6) return `${(val / 1e6).toFixed(1)}M`;
+                return `${Math.round(val / 10000) * 10}K`;
+            };
+
+            return (
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-academic-dark">Damages by Country</h3>
+                        <p className="text-xs text-gray-500 mt-1">Click column headers to sort | {sortedData.length} countries</p>
+                    </div>
+                    <div className="overflow-x-auto" style={{maxHeight: '600px', overflowY: 'auto'}}>
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Country</th>
+                                    <SortHeader field="population" label="Population" />
+                                    <SortHeader field="budget" label="Total Damages" />
+                                    <SortHeader field="damagesPerCapita" label="Damages/Capita" />
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {sortedData.map((c, idx) => (
+                                    <tr key={c.code} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{c.name}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600">{formatPop(c.population)}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-academic-dark">{formatB(c.budget)}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600">${Math.round(c.damagesPerCapita)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        const DamagesView = ({ countryData, worldPaths, inputs }) => {
+            const totals = useMemo(() => countryData.reduce((acc, c) => ({
+                budget: acc.budget + c.budget,
+                countries: acc.countries + (c.budget > 0 ? 1 : 0),
+            }), { budget: 0, countries: 0 }), [countryData]);
+
+            const formatT = (val) => `$${(val / 1e12).toFixed(2)}T`;
+
+            return (
+                <div className="flex-1 p-3 md:p-6 overflow-y-auto bg-gray-100">
+                    <div className="mb-6">
+                        <h1 className="text-2xl md:text-4xl font-bold text-black tracking-tight academic-font">Climate Damages</h1>
+                        <p className="text-gray-500 mt-2">Estimated climate damages by country based on the Banerjee-Duflo-Greenstone proposal</p>
+                        <div className="flex flex-wrap gap-2 mt-2 text-xs md:text-sm">
+                            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">{inputs.rcp} x {inputs.ssp}</span>
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">Year: {inputs.year}</span>
+                            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">VSL: ${inputs.vsl === '' ? 2.0 : inputs.vsl}M</span>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        <div className="bg-white rounded-lg shadow p-4">
+                            <p className="text-xs text-gray-500 uppercase">Total Damages</p>
+                            <p className="text-2xl font-bold text-academic-dark">{formatT(totals.budget)}</p>
+                            <p className="text-xs text-gray-400">estimated climate damages</p>
+                        </div>
+                        <div className="bg-white rounded-lg shadow p-4">
+                            <p className="text-xs text-gray-500 uppercase">Countries Affected</p>
+                            <p className="text-2xl font-bold text-academic-dark">{totals.countries}</p>
+                            <p className="text-xs text-gray-400">with positive damages</p>
+                        </div>
+                    </div>
+                    <DamagesMap countryData={countryData} worldPaths={worldPaths} />
+                    <DamagesTable countryData={countryData} />
+                </div>
+            );
+        };
+
+        const SpendingMap = ({ countryData, worldPaths }) => {
+            const [activeTab, setActiveTab] = useState('program');
+            const [tooltip, setTooltip] = useState(null);
+            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+            const countryLookup = useMemo(() => {
+                const lookup = {};
+                countryData.forEach(c => { lookup[c.code] = c; });
+                return lookup;
+            }, [countryData]);
+
+            const mapColors = useMemo(() => {
+                const programColors = {};
+                const spendingColors = {};
+                const spendingPerCapita = countryData.map(c => c.population > 0 ? c.totalSpending / c.population : 0).filter(v => v > 0);
+                spendingPerCapita.sort((a, b) => a - b);
+
+                const getQuantileColor = (value, sortedValues, scale) => {
+                    if (value <= 0) return scale[0];
+                    const idx = sortedValues.findIndex(v => v >= value);
+                    const quantile = idx === -1 ? scale.length - 1 : Math.floor((idx / sortedValues.length) * scale.length);
+                    return scale[Math.min(quantile, scale.length - 1)];
+                };
+
+                countryData.forEach(c => {
+                    const iso2 = ISO3_TO_ISO2[c.code];
+                    if (!iso2) return;
+                    if (c.ubiSpending > 0) programColors[iso2] = PROGRAM_COLORS.ubi;
+                    else if (c.wtbiSpending > 0) programColors[iso2] = PROGRAM_COLORS.wtbi;
+                    else programColors[iso2] = PROGRAM_COLORS.neither;
+                    const spc = c.population > 0 ? c.totalSpending / c.population : 0;
+                    spendingColors[iso2] = getQuantileColor(spc, spendingPerCapita, SPENDING_SCALE);
+                });
+                return { programColors, spendingColors };
+            }, [countryData]);
+
+            const getTooltipContent = (iso2) => {
+                const iso3 = Object.keys(ISO3_TO_ISO2).find(k => ISO3_TO_ISO2[k] === iso2);
+                const country = iso3 ? countryLookup[iso3] : null;
+                if (!country) {
+                    const pathData = worldPaths[iso2];
+                    return (<div><div className="font-semibold">{pathData?.name || iso2}</div><div className="text-gray-400">No data</div></div>);
+                }
+                const formatPop = (n) => {
+                    if (n >= 1e9) return `${(n/1e9).toFixed(2)}B`;
+                    if (n >= 1e6) return `${(n/1e6).toFixed(1)}M`;
+                    return `${Math.round(n / 10000) * 10}K`;
+                };
+                if (activeTab === 'program') {
+                    const pType = country.ubiSpending > 0 ? 'UBI' : country.wtbiSpending > 0 ? 'WTBI' : 'Neither';
+                    return (
+                        <div>
+                            <div className="font-semibold">{country.name}</div>
+                            <div>Program: <span className="font-medium">{pType}</span></div>
+                            <div>Population: {formatPop(country.population)}</div>
+                        </div>
+                    );
+                } else {
+                    const pop = country.population || 1;
+                    return (
+                        <div>
+                            <div className="font-semibold">{country.name}</div>
+                            <div>Spending/Capita: <span className="font-medium">${Math.round(country.totalSpending/pop)}</span></div>
+                            <div className="mt-1 text-xs">
+                                <div>UBI: ${Math.round(country.ubiSpending/pop)}</div>
+                                <div>WTBI: ${Math.round(country.wtbiSpending/pop)}</div>
+                                <div>Disaster: ${Math.round(country.disasterInsurance/pop)}</div>
+                                <div>Community: ${Math.round(country.communityGrants/pop)}</div>
+                            </div>
+                        </div>
+                    );
+                }
+            };
+
+            const currentColors = activeTab === 'program' ? mapColors.programColors : mapColors.spendingColors;
+            const handleMouseMove = (e) => { setMousePos({ x: e.clientX, y: e.clientY }); };
+            if (!worldPaths) return null;
+
+            return (
+                <div className="bg-white rounded-lg shadow p-4 mb-6">
+                    <div className="flex gap-1 mb-4 border-b overflow-x-auto">
+                        {[
+                            { id: 'program', label: 'Program Type' },
+                            { id: 'spending', label: 'Spending/Capita' }
+                        ].map(tab => (
+                            <button key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                                    activeTab === tab.id
+                                        ? 'text-academic-medium border-b-2 border-academic-medium'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="relative" style={{ height: '400px' }} onMouseMove={handleMouseMove}>
+                        <svg viewBox="0 0 1000 500" className="w-full h-full" style={{ background: '#f8fafc' }}>
+                            {Object.entries(worldPaths).map(([iso2, data]) => (
+                                <path key={iso2} d={data.path}
+                                    fill={currentColors[iso2] || PROGRAM_COLORS.noData}
+                                    stroke="#fff" strokeWidth="0.5"
+                                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                                    onMouseEnter={() => setTooltip(iso2)}
+                                    onMouseLeave={() => setTooltip(null)} />
+                            ))}
+                        </svg>
+                        {tooltip && (
+                            <div className="fixed bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg text-sm z-50 pointer-events-none"
+                                style={{ left: mousePos.x + 15, top: mousePos.y + 15 }}>
+                                {getTooltipContent(tooltip)}
+                            </div>
+                        )}
+                    </div>
+                    <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm">
+                        {activeTab === 'program' ? (
+                            <>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded" style={{ background: PROGRAM_COLORS.ubi }}></div>
+                                    <span>UBI</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded" style={{ background: PROGRAM_COLORS.wtbi }}></div>
+                                    <span>WTBI</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded" style={{ background: PROGRAM_COLORS.neither }}></div>
+                                    <span>Neither</span>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <span className="text-gray-500">Low</span>
+                                <div className="flex">
+                                    {SPENDING_SCALE.map((color, i) => (
+                                        <div key={i} className="w-6 h-4" style={{ background: color }}></div>
+                                    ))}
+                                </div>
+                                <span className="text-gray-500">High</span>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded" style={{ background: PROGRAM_COLORS.noData }}></div>
+                            <span>No Data</span>
+                        </div>
+                    </div>
+                </div>
             );
         };
 
@@ -387,214 +782,6 @@
                             <p>WTBI: <span className="font-medium">{formatB(totals.wtbiSpending)}</span></p>
                             <p>Disaster: <span className="font-medium">{formatB(totals.disasterInsurance)}</span></p>
                             <p>Community: <span className="font-medium">{formatB(totals.communityGrants)}</span></p>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // World Map Section Component
-        const MapSection = ({ countryData, worldPaths }) => {
-            const [activeTab, setActiveTab] = useState('program');
-            const [tooltip, setTooltip] = useState(null);
-            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-            // Build lookup from ISO3 code to country data
-            const countryLookup = useMemo(() => {
-                const lookup = {};
-                countryData.forEach(c => { lookup[c.code] = c; });
-                return lookup;
-            }, [countryData]);
-
-            // Compute color data for each map type
-            const mapColors = useMemo(() => {
-                const programColors = {};
-                const damagesColors = {};
-                const spendingColors = {};
-
-                // Collect values for quantile calculation
-                const damagesPerCapita = countryData.map(c => c.population > 0 ? c.budget / c.population : 0).filter(v => v > 0);
-                const spendingPerCapita = countryData.map(c => c.population > 0 ? c.totalSpending / c.population : 0).filter(v => v > 0);
-                damagesPerCapita.sort((a, b) => a - b);
-                spendingPerCapita.sort((a, b) => a - b);
-
-                const getQuantileColor = (value, sortedValues, scale) => {
-                    if (value <= 0) return scale[0];
-                    const idx = sortedValues.findIndex(v => v >= value);
-                    const quantile = idx === -1 ? scale.length - 1 : Math.floor((idx / sortedValues.length) * scale.length);
-                    return scale[Math.min(quantile, scale.length - 1)];
-                };
-
-                countryData.forEach(c => {
-                    const iso2 = ISO3_TO_ISO2[c.code];
-                    if (!iso2) return;
-
-                    // Program type
-                    if (c.ubiSpending > 0) programColors[iso2] = PROGRAM_COLORS.ubi;
-                    else if (c.wtbiSpending > 0) programColors[iso2] = PROGRAM_COLORS.wtbi;
-                    else programColors[iso2] = PROGRAM_COLORS.neither;
-
-                    // Damages per capita
-                    const dpc = c.population > 0 ? c.budget / c.population : 0;
-                    damagesColors[iso2] = getQuantileColor(dpc, damagesPerCapita, DAMAGES_SCALE);
-
-                    // Spending per capita
-                    const spc = c.population > 0 ? c.totalSpending / c.population : 0;
-                    spendingColors[iso2] = getQuantileColor(spc, spendingPerCapita, SPENDING_SCALE);
-                });
-
-                return { programColors, damagesColors, spendingColors };
-            }, [countryData]);
-
-            const getTooltipContent = (iso2) => {
-                // Find ISO3 code
-                const iso3 = Object.keys(ISO3_TO_ISO2).find(k => ISO3_TO_ISO2[k] === iso2);
-                const country = iso3 ? countryLookup[iso3] : null;
-
-                // If no spending data, show country name from worldPaths with "No data"
-                if (!country) {
-                    const pathData = worldPaths[iso2];
-                    const countryName = pathData?.name || iso2;
-                    return (
-                        <div>
-                            <div className="font-semibold">{countryName}</div>
-                            <div className="text-gray-400">No data</div>
-                        </div>
-                    );
-                }
-
-                const formatNum = (n) => {
-                    if (n >= 1e9) return `$${(n/1e9).toFixed(1)}B`;
-                    if (n >= 1e6) return `$${(n/1e6).toFixed(1)}M`;
-                    return `$${n.toFixed(0)}`;
-                };
-                const formatPop = (n) => {
-                    if (n >= 1e9) return `${(n/1e9).toFixed(2)}B`;
-                    if (n >= 1e6) return `${(n/1e6).toFixed(1)}M`;
-                    return `${Math.round(n / 10000) * 10}K`;
-                };
-
-                if (activeTab === 'program') {
-                    const pType = country.ubiSpending > 0 ? 'UBI' : country.wtbiSpending > 0 ? 'WTBI' : 'Neither';
-                    return (
-                        <div>
-                            <div className="font-semibold">{country.name}</div>
-                            <div>Program: <span className="font-medium">{pType}</span></div>
-                            <div>Population: {formatPop(country.population)}</div>
-                        </div>
-                    );
-                } else if (activeTab === 'damages') {
-                    const dpc = country.population > 0 ? country.budget / country.population : 0;
-                    return (
-                        <div>
-                            <div className="font-semibold">{country.name}</div>
-                            <div>Damages/Capita: <span className="font-medium">${Math.round(dpc)}</span></div>
-                            <div>Total Damages: {formatNum(country.budget)}</div>
-                        </div>
-                    );
-                } else {
-                    const pop = country.population || 1;
-                    return (
-                        <div>
-                            <div className="font-semibold">{country.name}</div>
-                            <div>Spending/Capita: <span className="font-medium">${Math.round(country.totalSpending/pop)}</span></div>
-                            <div className="mt-1 text-xs">
-                                <div>UBI: ${Math.round(country.ubiSpending/pop)}</div>
-                                <div>WTBI: ${Math.round(country.wtbiSpending/pop)}</div>
-                                <div>Disaster: ${Math.round(country.disasterInsurance/pop)}</div>
-                                <div>Community: ${Math.round(country.communityGrants/pop)}</div>
-                            </div>
-                        </div>
-                    );
-                }
-            };
-
-            const currentColors = activeTab === 'program' ? mapColors.programColors
-                : activeTab === 'damages' ? mapColors.damagesColors
-                : mapColors.spendingColors;
-
-            const handleMouseMove = (e) => {
-                setMousePos({ x: e.clientX, y: e.clientY });
-            };
-
-            if (!worldPaths) return null;
-
-            return (
-                <div className="bg-white rounded-lg shadow p-4 mb-6">
-                    <div className="flex gap-1 mb-4 border-b overflow-x-auto">
-                        {[
-                            { id: 'program', label: 'Program Type' },
-                            { id: 'damages', label: 'Damages/Capita' },
-                            { id: 'spending', label: 'Spending/Capita' }
-                        ].map(tab => (
-                            <button key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                                    activeTab === tab.id
-                                        ? 'text-academic-medium border-b-2 border-academic-medium'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                }`}>
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="relative" style={{ height: '400px' }} onMouseMove={handleMouseMove}>
-                        <svg viewBox="0 0 1000 500" className="w-full h-full" style={{ background: '#f8fafc' }}>
-                            {Object.entries(worldPaths).map(([iso2, data]) => (
-                                <path
-                                    key={iso2}
-                                    d={data.path}
-                                    fill={currentColors[iso2] || PROGRAM_COLORS.noData}
-                                    stroke="#fff"
-                                    strokeWidth="0.5"
-                                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                                    onMouseEnter={() => setTooltip(iso2)}
-                                    onMouseLeave={() => setTooltip(null)}
-                                />
-                            ))}
-                        </svg>
-
-                        {tooltip && (
-                            <div
-                                className="fixed bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg text-sm z-50 pointer-events-none"
-                                style={{ left: mousePos.x + 15, top: mousePos.y + 15 }}>
-                                {getTooltipContent(tooltip)}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Legend */}
-                    <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm">
-                        {activeTab === 'program' ? (
-                            <>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded" style={{ background: PROGRAM_COLORS.ubi }}></div>
-                                    <span>UBI</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded" style={{ background: PROGRAM_COLORS.wtbi }}></div>
-                                    <span>WTBI</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded" style={{ background: PROGRAM_COLORS.neither }}></div>
-                                    <span>Neither</span>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <span className="text-gray-500">Low</span>
-                                <div className="flex">
-                                    {(activeTab === 'damages' ? DAMAGES_SCALE : SPENDING_SCALE).map((color, i) => (
-                                        <div key={i} className="w-6 h-4" style={{ background: color }}></div>
-                                    ))}
-                                </div>
-                                <span className="text-gray-500">High</span>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded" style={{ background: PROGRAM_COLORS.noData }}></div>
-                            <span>No Data</span>
                         </div>
                     </div>
                 </div>
@@ -751,8 +938,9 @@
                 <span onClick={() => setActiveView('landing')} className="font-bold academic-font text-base md:text-lg tracking-tight cursor-pointer text-black hover:opacity-60 transition-opacity">FAIR</span>
                 <div className="flex gap-1">
                     {[
-                        { id: 'simulation', label: 'Spending' },
+                        { id: 'damages', label: 'Damages' },
                         { id: 'revenue', label: 'Revenue' },
+                        { id: 'simulation', label: 'Spending' },
                         { id: 'survey', label: 'Survey' }
                     ].map(tab => (
                         <button key={tab.id}
@@ -1347,10 +1535,7 @@
             'Switzerland','Turkey','United Kingdom','United States',
         ]);
 
-        const RevenueSimulation = ({ revenueData, wealthData }) => {
-            const [scenario, setScenario] = useState(DEFAULT_REVENUE_STATE.corpScenario);
-            const [brackets, setBrackets] = useState(DEFAULT_REVENUE_STATE.brackets);
-            const [oecdOnly, setOecdOnly] = useState(DEFAULT_REVENUE_STATE.oecdOnly);
+        const RevenueSimulation = ({ revenueData, wealthData, scenario, setScenario, brackets, setBrackets, oecdOnly, setOecdOnly }) => {
             const [sortCol, setSortCol] = useState('total');
             const [sortDir, setSortDir] = useState(-1);
 
@@ -1648,12 +1833,18 @@
                 <div className="bg-white px-6 md:px-10 py-20 md:py-28">
                     <div className="max-w-5xl mx-auto">
                         <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-16 text-center">Explore the data.</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                            <button onClick={() => setActiveView('damages')}
+                                    className="border-2 border-black p-8 text-left group hover:bg-black hover:text-white transition-colors">
+                                <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 group-hover:text-gray-400 mb-3">Climate Damages</p>
+                                <h3 className="text-xl font-bold mb-2 tracking-tight">Damages Explorer</h3>
+                                <p className="text-sm text-gray-500 group-hover:text-gray-400 leading-relaxed">Visualize projected climate damages by country, year, and value of statistical life.</p>
+                            </button>
                             <button onClick={() => setActiveView('simulation')}
                                     className="border-2 border-black p-8 text-left group hover:bg-black hover:text-white transition-colors">
-                                <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 group-hover:text-gray-400 mb-3">Interactive Tool</p>
+                                <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 group-hover:text-gray-400 mb-3">Fund Allocation</p>
                                 <h3 className="text-xl font-bold mb-2 tracking-tight">Spending Simulator</h3>
-                                <p className="text-sm text-gray-500 group-hover:text-gray-400 leading-relaxed">Explore projected climate compensation spending across countries, years, and policy scenarios.</p>
+                                <p className="text-sm text-gray-500 group-hover:text-gray-400 leading-relaxed">Explore how compensation funds are allocated across UBI, WTBI, community grants, and disaster insurance.</p>
                             </button>
                             <button onClick={() => setActiveView('revenue')}
                                     className="border-2 border-black p-8 text-left group hover:bg-black hover:text-white transition-colors">
@@ -1678,7 +1869,7 @@
             </div>
         );
 
-        const VALID_VIEWS = new Set(['landing', 'simulation', 'revenue', 'survey']);
+        const VALID_VIEWS = new Set(['landing', 'damages', 'simulation', 'revenue', 'survey']);
         const VIEW_ALIASES = { spending: 'simulation' };
         const getViewFromHash = () => {
             const h = window.location.hash.slice(1).toLowerCase();
@@ -1706,7 +1897,12 @@
             const [wealthData, setWealthData] = useState(null);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
-            const [inputs, setInputs] = useState({ rcp: 'RCP 4.5', ssp: 'SSP 2', year: 2050, ubiRate: 3.0, wtbiRate: 4.2, communityShare: 10, disasterRate: 0.8, topUpWtbi: true, vsl: 2.0 });
+            const [inputs, setInputs] = useState({ rcp: 'RCP 4.5', ssp: 'SSP 2', year: 2050, ubiRate: 3.0, wtbiRate: 4.2, communityShare: 10, disasterRate: 0.8, topUpWtbi: true, vsl: 2.0, capToRevenue: false });
+
+            // Revenue state (shared between Revenue page and Spending page)
+            const [revScenario, setRevScenario] = useState(DEFAULT_REVENUE_STATE.corpScenario);
+            const [revBrackets, setRevBrackets] = useState(DEFAULT_REVENUE_STATE.brackets);
+            const [revOecdOnly, setRevOecdOnly] = useState(DEFAULT_REVENUE_STATE.oecdOnly);
 
             useEffect(() => {
                 try {
@@ -1740,6 +1936,35 @@
                 } catch (err) { setError(err.message); setLoading(false); }
             }, []);
 
+            // Compute total revenue from current revenue settings (in billions)
+            const revSortedBrackets = useMemo(() =>
+                [...revBrackets].filter(b => b.rate > 0).sort((a, b) => a.threshold - b.threshold),
+            [revBrackets]);
+
+            const totalRevenue = useMemo(() => {
+                let corp = 0;
+                if (revenueData && revScenario !== 'none') {
+                    Object.entries(revenueData.c).forEach(([name, d]) => {
+                        if (revOecdOnly && !OECD_COUNTRIES.has(name)) return;
+                        const baseline = d.co ? d.co[0] : d.r[0];
+                        const scenarioRev = d.r[revScenario];
+                        if (scenarioRev != null && baseline != null) {
+                            corp += Math.round((scenarioRev - baseline) * 10) / 10;
+                        }
+                    });
+                }
+                let wealth = 0;
+                if (wealthData) {
+                    const th = wealthData.th;
+                    Object.entries(wealthData.c).forEach(([name, d]) => {
+                        if (revOecdOnly && !OECD_COUNTRIES.has(name)) return;
+                        const result = computeCountryWealthTax(d, th, revSortedBrackets);
+                        if (result.rev > 0) wealth += result.rev / 1e9;
+                    });
+                }
+                return corp + wealth; // in billions
+            }, [revenueData, wealthData, revScenario, revSortedBrackets, revOecdOnly]);
+
             const countryData = useMemo(() => {
                 if (!rawData) return [];
                 // Calculate rate adjustments relative to default rates
@@ -1770,6 +1995,7 @@
                         name: shortenName(info.n),
                         population: allocation.population,
                         budget: allocation.budget,
+                        damagesPerCapita: allocation.population > 0 ? allocation.budget / allocation.population : 0,
                         totalSpending: allocation.totalSpending,
                         ubiSpending: allocation.ubiSpending,
                         wtbiSpending: allocation.wtbiSpending,
@@ -1780,6 +2006,46 @@
                 return results;
             }, [rawData, inputs]);
 
+            // Apply revenue cap: re-run allocation with scaled budgets if capToRevenue is on
+            const spendingData = useMemo(() => {
+                if (!inputs.capToRevenue || totalRevenue <= 0 || !rawData) return countryData;
+                const totalDamages = countryData.reduce((s, c) => s + c.budget, 0);
+                const revenueInDollars = totalRevenue * 1e9;
+                if (revenueInDollars >= totalDamages) return countryData;
+                const budgetScale = revenueInDollars / totalDamages;
+
+                const userUbiRate = inputs.ubiRate === '' ? 3.0 : inputs.ubiRate;
+                const userWtbiRate = inputs.wtbiRate === '' ? 4.2 : inputs.wtbiRate;
+                const userCommunityShare = inputs.communityShare === '' ? 10 : inputs.communityShare;
+                const userDisasterRate = inputs.disasterRate === '' ? 0.8 : inputs.disasterRate;
+                const userVsl = inputs.vsl === '' ? 2.0 : inputs.vsl;
+                const ubiRateAdj = userUbiRate / 3.0;
+                const wtbiRateAdj = userWtbiRate / 4.2;
+                const communityAdj = userCommunityShare / 10;
+                const disasterAdj = userDisasterRate / 0.8;
+                const vslAdj = userVsl / 2.0;
+
+                const results = [];
+                for (const [iso, info] of Object.entries(rawData.c)) {
+                    const yearData = getYearData(rawData, inputs.year, iso);
+                    if (!yearData) continue;
+                    const allocation = allocateSpending(yearData, ubiRateAdj, wtbiRateAdj, communityAdj, disasterAdj, inputs.topUpWtbi, vslAdj, inputs.year, budgetScale);
+                    results.push({
+                        code: iso,
+                        name: shortenName(info.n),
+                        population: allocation.population,
+                        budget: allocation.budget,
+                        damagesPerCapita: allocation.population > 0 ? allocation.budget / allocation.population : 0,
+                        totalSpending: allocation.totalSpending,
+                        ubiSpending: allocation.ubiSpending,
+                        wtbiSpending: allocation.wtbiSpending,
+                        disasterInsurance: allocation.disasterInsurance,
+                        communityGrants: allocation.communityGrants
+                    });
+                }
+                return results;
+            }, [countryData, inputs, rawData, totalRevenue]);
+
             if (loading) return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-academic-medium"></div></div>;
             if (error) return <div className="flex items-center justify-center h-screen text-red-600"><p className="text-xl font-bold">Error: {error}</p></div>;
 
@@ -1788,27 +2054,35 @@
                     <TopNav activeView={activeView} setActiveView={setActiveView} />
                     {activeView === 'landing' ? (
                         <LandingPage setActiveView={setActiveView} />
+                    ) : activeView === 'damages' ? (
+                        <div className="flex flex-col md:flex-row" style={{minHeight: 'calc(100vh - 44px)'}}>
+                            <DamagesSidebar inputs={inputs} setInputs={setInputs} />
+                            <DamagesView countryData={countryData} worldPaths={worldPaths} inputs={inputs} />
+                        </div>
                     ) : activeView === 'simulation' ? (
                         <div className="flex flex-col md:flex-row" style={{minHeight: 'calc(100vh - 44px)'}}>
-                            <Sidebar inputs={inputs} setInputs={setInputs} />
+                            <SpendingSidebar inputs={inputs} setInputs={setInputs} totalRevenue={totalRevenue} />
                             <div className="flex-1 p-3 md:p-6 overflow-y-auto bg-gray-100">
                                 <div className="mb-6">
-                                    <h1 className="text-2xl md:text-4xl font-bold text-black tracking-tight academic-font">Climate Compensation Simulator</h1>
-                                    <p className="text-gray-500 mt-2">Based on Banerjee-Duflo-Greenstone climate compensation proposal</p>
+                                    <h1 className="text-2xl md:text-4xl font-bold text-black tracking-tight academic-font">Spending Allocation</h1>
+                                    <p className="text-gray-500 mt-2">How climate compensation funds are allocated across programs</p>
                                     <div className="flex flex-wrap gap-2 mt-2 text-xs md:text-sm">
                                         <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">{inputs.rcp} x {inputs.ssp}</span>
                                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">Year: {inputs.year}</span>
                                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded">UBI: ${inputs.ubiRate === '' ? 3.0 : inputs.ubiRate}/day | WTBI: ${inputs.wtbiRate === '' ? 4.2 : inputs.wtbiRate}/day</span>
                                     </div>
                                 </div>
-                                <SummaryStats countryData={countryData} />
-                                <MapSection countryData={countryData} worldPaths={worldPaths} />
+                                <SummaryStats countryData={spendingData} />
+                                <SpendingMap countryData={spendingData} worldPaths={worldPaths} />
                                 <TimeSeriesChart rawData={rawData} inputs={inputs} />
-                                <SpendingTable countryData={countryData} />
+                                <SpendingTable countryData={spendingData} />
                             </div>
                         </div>
                     ) : activeView === 'revenue' ? (
-                        revenueData ? <RevenueSimulation revenueData={revenueData} wealthData={wealthData} /> : <div className="p-8 text-gray-500">No revenue data loaded.</div>
+                        revenueData ? <RevenueSimulation revenueData={revenueData} wealthData={wealthData}
+                            scenario={revScenario} setScenario={setRevScenario}
+                            brackets={revBrackets} setBrackets={setRevBrackets}
+                            oecdOnly={revOecdOnly} setOecdOnly={setRevOecdOnly} /> : <div className="p-8 text-gray-500">No revenue data loaded.</div>
                     ) : (
                         <SurveyView surveyData={surveyData} />
                     )}
